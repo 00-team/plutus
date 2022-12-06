@@ -5,7 +5,7 @@ a database
 ## Roadmap
 
 1. define the fix table schema\
-   user id | phone | nickname | photo | token
+   user id | phone | nickname | picture | token
 
 1. write a basic database in **python**, **C** and **sqlite**
 1. test the performance of all databases
@@ -24,6 +24,6 @@ a database
 user_id: 8 bytes - unsigned int
 phone: 2 bytes cc, 7 bytes phone - unsigned int
 nickname: 52 bytes encoded - char
-photo: 12 bytes - hex
+picture: 12 bytes - hex
 token: hashed 64 bytes
 ```
