@@ -18,6 +18,9 @@ a database
 
 1. test must be a realistic scenario (random read/write in this case)
 
+1. flag the users for deleation and keep a list of them in to registery
+   so the new user will be replacing the old ones
+
 ## Schema
 
 ```py
