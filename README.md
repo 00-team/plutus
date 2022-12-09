@@ -4,11 +4,8 @@ a database
 
 ## Roadmap
 
-1. define the fix table schema\
+* [x] define the fix table schema\
    user id | phone | nickname | picture | token
-
-1. write a basic database in **python**, **C** and **sqlite**
-1. test the performance of all databases
 
 ## Notos
 
@@ -23,10 +20,15 @@ a database
 
 ## Schema
 
-```py
-user_id: 8 bytes - unsigned int
-phone: 2 bytes cc, 7 bytes phone - unsigned int
-nickname: 52 bytes encoded - char
-picture: 12 bytes - hex
-token: hashed 64 bytes
+```c
+// 152 bytes in total
+typedef struct {
+    unsigned long id; // 8 bytes - 18,446,744,073,709,551,616
+    unsigned short cc; // 2 bytes - country code e.g. +1
+    char phone[12]; // temperary ...
+    unsigned char token[64]; // sha512 hash of token
+    char nickname[52];
+    unsigned char picture[13];
+    unsigned char ext; // type of the picture png/jpg/gif
+} User;
 ```

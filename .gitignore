@@ -131,3 +131,4 @@ dmypy.json
 # database files
 *.db
 *.bin
+plutus

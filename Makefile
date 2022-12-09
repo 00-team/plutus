@@ -4,4 +4,4 @@ LIBS = -lcrypto
 CFLAGS = -pedantic -Wall -Wno-deprecated-declarations -Os ${INCS} -Wextra -Werror ${LIBS}
 
 main:
-	@cc -o run $@.c ${CFLAGS}
+	@cc main.c -o plutus ${CFLAGS}
