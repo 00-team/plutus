@@ -61,15 +61,15 @@ User* get_user(unsigned long user_id) {
 }
 
 
-// write one million user into db
+// write 100k user into db
 void stage_1() {
     FILE *f;
     unsigned int i = 1;
 
     f = fopen(DB_FILE, "wb");
 
-    // write 1M users
-    for (; i <= 1000000; i++) {
+    // write 100K users
+    for (; i <= 100000; i++) {
         User *user = get_user(i);
         fwrite(user, sizeof(User), 1, f);
         free(user);
