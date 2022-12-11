@@ -6,9 +6,10 @@
 #include <time.h>
 #include <openssl/sha.h>
 #include <sys/random.h>
+#include <unistd.h>
 
-#define DB_FILE "database.bin"
-#define member_size(type, member) sizeof(((type*)0)->member)
+#include "plutus.h"
+
 
 typedef struct {
     unsigned long id;
@@ -20,6 +21,10 @@ typedef struct {
     unsigned char ext;
 } User;
 
+
+FILE *udb = NULL;
+
+// temp variables
 unsigned char hash[SHA512_DIGEST_LENGTH];
 unsigned char data[] = "A_TOKNE";
 
@@ -43,9 +48,7 @@ void print_user(User* user) {
 }
 
 // return a pointer to a user
-User* get_user(unsigned long user_id) {
-    User* user = malloc(sizeof(User));
-
+void get_user(User* user, unsigned long user_id) {
     user->id = user_id;
     user->cc = 98;
 
@@ -55,25 +58,28 @@ User* get_user(unsigned long user_id) {
     // memcpy(user.picture, "aGGGGGGGGGGGGG", 14);
     // memset(user.picture, 71, 14);
     getrandom(user->picture, member_size(User, picture), GRND_NONBLOCK);
-
-    return user;
 }
 
 // write 100k user into db
 void stage_1() {
-    FILE* f;
     unsigned int i = 1;
 
-    f = fopen(DB_FILE, "wb");
+    // rewrite the current database
+    // basicly clear it out
+    fclose(udb);
+    fclose(fopen(USER_DB_FILENAME, "wb"));
+    udb = fopen(USER_DB_FILENAME, "r+b");
+    if (udb == NULL) die("error opening the (%s)!", USER_DB_FILENAME);
+    
 
     // write 100K users
     for (; i <= 100000; i++) {
-        User* user = get_user(i);
-        fwrite(user, sizeof(User), 1, f);
+        User *user = malloc(sizeof(User));
+        get_user(user, i);
+        fwrite(user, sizeof(User), 1, udb);
         free(user);
     }
 
-    fclose(f);
 }
 
 // read one random user from db
@@ -151,11 +157,28 @@ unsigned long user_count2(FILE *db) {
 }
 
 int main() {
+    setup();
+    stage_1();
+
+
+
+
+
+
+
+
+
+
+
+
+
+    clean_up();
+    return 0;
     // stage_1();
     // return 0;
 
-    FILE* db;
-    db = fopen(DB_FILE, "r+b");
+    // FILE* db;
+    // db = fopen(DB_FILE, "r+b");
     
 
     // bool x = false;
@@ -199,16 +222,15 @@ int main() {
     //     printf("try[%d]: %ld | %ld\n", i, end - begin, count);
     // }
 
-    clock_t begin = clock();
-    unsigned long count = user_count2(db);
-    clock_t end = clock();
-    printf("time: %ld | %ld\n", end - begin, count);
+    // clock_t begin = clock();
+    // unsigned long count = user_count2(db);
+    // clock_t end = clock();
+    // printf("time: %ld | %ld\n", end - begin, count);
 
     // printf("user count %ld\n", user_count(db));
     // printf("%15d:\n", 234324);
 
     // printf("sizeof User: %ld\n", sizeof(User));
 
-    fclose(db);
-    return 0;
+    // fclose(db);
 }
