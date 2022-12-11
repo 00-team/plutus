@@ -12,7 +12,7 @@
 
 
 typedef struct {
-    unsigned long id;
+    user_id_t id;
     unsigned short cc;
     char phone[12];
     unsigned char token[64];
@@ -23,14 +23,13 @@ typedef struct {
 
 
 FILE *udb = NULL;
+user_id_t DELETED_USER_ID = 0;
 
 // temp variables
 unsigned char hash[SHA512_DIGEST_LENGTH];
 unsigned char data[] = "A_TOKNE";
 
-// 8 + 2 + 12 + 64 + 52 + 13 + 1 = 152
-
-void print_user(User* user) {
+void user_print(User *user) {
     printf("----------------------\n");
     printf("id: %ld\ncc: %d\nphone: %s\n", user->id, user->cc, user->phone);
     printf("token: ");
@@ -38,7 +37,6 @@ void print_user(User* user) {
     for (int i = 0; i < SHA512_DIGEST_LENGTH; i++)
         printf("%02x", user->token[i]);
 
-    // printf("\nnickname: %s\npicture: %s\n", user->nickname, user->picture);
     printf("\nnickname: %s\npicture: ", user->nickname);
 
     for (int i = 0; i < 13; i++)
@@ -48,21 +46,23 @@ void print_user(User* user) {
 }
 
 // return a pointer to a user
-void get_user(User* user, unsigned long user_id) {
+void user_set(User* user, user_id_t user_id) {
     user->id = user_id;
     user->cc = 98;
 
     memcpy(user->phone, "09440001122", 12);
     memcpy(user->token, hash, SHA512_DIGEST_LENGTH);
     memcpy(user->nickname, "nickname gg ez", 15);
-    // memcpy(user.picture, "aGGGGGGGGGGGGG", 14);
-    // memset(user.picture, 71, 14);
     getrandom(user->picture, member_size(User, picture), GRND_NONBLOCK);
 }
 
-// write 100k user into db
-void stage_1() {
-    unsigned int i = 1;
+// write N user into db
+void write_n_users(user_id_t N) {
+    // set the hash
+    SHA512(data, strlen((char *)data), hash);
+
+    user_id_t i = 1;
+    User user;
 
     // rewrite the current database
     // basicly clear it out
@@ -72,57 +72,54 @@ void stage_1() {
     if (udb == NULL) die("error opening the (%s)!", USER_DB_FILENAME);
     
 
-    // write 100K users
-    for (; i <= 100000; i++) {
-        User *user = malloc(sizeof(User));
-        get_user(user, i);
-        fwrite(user, sizeof(User), 1, udb);
-        free(user);
+    // write N users
+    for (; i <= N; i++) {
+        user_set(&user, i);
+        fwrite(&user, sizeof(User), 1, udb);
     }
-
 }
 
 // read one random user from db
-void user_read(FILE *db, unsigned long id) {
-    User user;
-
-    // fseek(f, 0, SEEK_END);
-    // long db_size = ftell(f);
-
-    // printf("size: %ld | users: %ld\n", db_size, db_size / sizeof(User));
-
-    fseek(db, sizeof(User) * (id - 1), SEEK_SET);
-
-    fread(&user, sizeof(User), 1, db);
-    // print_user(&user);
+void user_read(User *user, user_id_t id) {
+    fseek(udb, sizeof(User) * (id - 1), SEEK_SET);
+    fread(user, sizeof(User), 1, udb);
 }
 
-unsigned long user_count(FILE *db) {
+void user_delete(user_id_t id) {
+    fseek(udb, sizeof(User) * (id - 1), SEEK_SET);
+    fwrite(&DELETED_USER_ID, sizeof(user_id_t), 1, udb);
+}
+
+user_id_t user_count() {
     // get the current position
-    long current_pos = ftell(db);
+    long current_pos = ftell(udb);
     // check if there was any error
     // in case if any error just return 0 as user count
     if (current_pos < 0)
         return 0;
 
     // go to end of the file
-    fseek(db, 0, SEEK_END);
+    fseek(udb, 0, SEEK_END);
     // get the current position
-    long db_size = ftell(db);
+    long db_size = ftell(udb);
     // check if there was any error
     // in case if any error just return 0 as user count
     if (db_size < 0)
         return 0;
     
-    fseek(db, current_pos, SEEK_SET);
+    fseek(udb, current_pos, SEEK_SET);
 
     // divide the size of database to the size of a user
     return db_size / sizeof(User);
 }
 
-unsigned long user_count2(FILE *db) {
+user_id_t user_count2() {
+    User user;
+    user_id_t count = 0;
+
     // get the current position
-    long current_pos = ftell(db);
+    long current_pos = ftell(udb);
+
     // check if there was any error
     // in case if any error just return 0 as user count
     if (current_pos < 0)
@@ -130,107 +127,30 @@ unsigned long user_count2(FILE *db) {
     
 
     // go to end of the file
-    int cur = fseek(db, 0, SEEK_SET);
+    int cur = fseek(udb, 0, SEEK_SET);
     // check if there was any error
     // in case if any error just return 0 as user count
     if (cur != 0)
         return 0;
     
-    User user;
-    unsigned long count = 0;
-    
-    while (fread(&user, sizeof(User), 1, db)) {
+    while (fread(&user, sizeof(User), 1, udb)) {
         if (user.id != 0) count++;
     }
-    // for (int i = 0; i < 20; i++) {
-    //     // printf("i: %d - %ld ", i, ftell(db));
-    //     int s = fread(&user, sizeof(User), 1, db);
-    //     // fseek(db, sizeof(User), SEEK_CUR);
-    //     if (user.id != 0) count++;
-    //     printf("user_id: %ld - s: %d\n", user.id, s);
-    // }
-
 
     return count;
-    
-    
 }
 
 int main() {
     setup();
-    stage_1();
 
-
-
-
-
-
-
-
-
-
-
-
+    write_n_users(100000);
 
     clean_up();
     return 0;
-    // stage_1();
-    // return 0;
-
-    // FILE* db;
-    // db = fopen(DB_FILE, "r+b");
     
 
-    // bool x = false;
-    // bool y = true;
-    // SHA512(data, strlen((char *)data), hash);
-
     // clock_t begin = clock();
-
-    // stage_1();
-
-    // unsigned long gg = 0;
-
-    // fseek(db, sizeof(User) * 2, SEEK_SET);
-    // fwrite(&gg, sizeof(unsigned long), 1, db);
-
-    // fseek(db, sizeof(User) * 6802, SEEK_SET);
-    // fwrite(&gg, sizeof(unsigned long), 1, db);
-
-    // fseek(db, sizeof(User) * 99994, SEEK_SET);
-    // fwrite(&gg, sizeof(unsigned long), 1, db);
-
-
-    // clock_t begin = clock();
-    // user_read(db, 696969);
+    // user_read(696969);
     // clock_t end = clock();
     // printf("user read: %ld\n", end - begin);
-    
-
-    // clock_t end = clock();
-
-    // printf("timeit: %lf\n", (double)(end - begin) / CLOCKS_PER_SEC);
-
-    // double tries[10];
-    // unsigned short i = 0;
-
-    // for (; i < 10; i++) {
-    //     clock_t begin = clock();
-    //     unsigned long count = user_count(db);
-    //     clock_t end = clock();
-    //     // tries[i] = (double)(end - begin) / CLOCKS_PER_SEC;
-    //     printf("try[%d]: %ld | %ld\n", i, end - begin, count);
-    // }
-
-    // clock_t begin = clock();
-    // unsigned long count = user_count2(db);
-    // clock_t end = clock();
-    // printf("time: %ld | %ld\n", end - begin, count);
-
-    // printf("user count %ld\n", user_count(db));
-    // printf("%15d:\n", 234324);
-
-    // printf("sizeof User: %ld\n", sizeof(User));
-
-    // fclose(db);
 }
