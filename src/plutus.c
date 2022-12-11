@@ -10,7 +10,6 @@
 
 #include "plutus.h"
 
-
 typedef struct {
     user_id_t id;
     unsigned short cc;
@@ -20,7 +19,6 @@ typedef struct {
     unsigned char picture[13];
     unsigned char ext;
 } User;
-
 
 FILE *udb = NULL;
 user_id_t DELETED_USER_ID = 0;
@@ -46,7 +44,7 @@ void user_print(User *user) {
 }
 
 // return a pointer to a user
-void user_set(User* user, user_id_t user_id) {
+void user_set(User *user, user_id_t user_id) {
     user->id = user_id;
     user->cc = 98;
 
@@ -69,8 +67,8 @@ void write_n_users(user_id_t N) {
     fclose(udb);
     fclose(fopen(USER_DB_FILENAME, "wb"));
     udb = fopen(USER_DB_FILENAME, "r+b");
-    if (udb == NULL) die("error opening the (%s)!", USER_DB_FILENAME);
-    
+    if (udb == NULL)
+        die("error opening the (%s)!", USER_DB_FILENAME);
 
     // write N users
     for (; i <= N; i++) {
@@ -106,7 +104,7 @@ user_id_t user_count() {
     // in case if any error just return 0 as user count
     if (db_size < 0)
         return 0;
-    
+
     fseek(udb, current_pos, SEEK_SET);
 
     // divide the size of database to the size of a user
@@ -124,7 +122,6 @@ user_id_t user_count2() {
     // in case if any error just return 0 as user count
     if (current_pos < 0)
         return 0;
-    
 
     // go to end of the file
     int cur = fseek(udb, 0, SEEK_SET);
@@ -132,9 +129,10 @@ user_id_t user_count2() {
     // in case if any error just return 0 as user count
     if (cur != 0)
         return 0;
-    
+
     while (fread(&user, sizeof(User), 1, udb)) {
-        if (user.id != 0) count++;
+        if (user.id != 0)
+            count++;
     }
 
     return count;
@@ -147,7 +145,6 @@ int main() {
 
     clean_up();
     return 0;
-    
 
     // clock_t begin = clock();
     // user_read(696969);
