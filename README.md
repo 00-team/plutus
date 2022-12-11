@@ -32,3 +32,10 @@ typedef struct {
     unsigned char ext; // type of the picture png/jpg/gif
 } User;
 ```
+
+## Todos
+
+* [ ] phone number from string to bytes\
+      hex 6 bytes 12 length or 3 two byte ints\
+      91 84 85 37 07\
+      look at the evey phone number samples to be sure about it
