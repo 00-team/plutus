@@ -10,6 +10,7 @@
 
 #include "plutus.h"
 
+// 152 byte
 typedef struct {
     user_id_t id;
     unsigned short cc;
@@ -18,18 +19,32 @@ typedef struct {
     char nickname[52];
     unsigned char picture[13];
     unsigned char ext;
+} OldUser;
+
+// 128 byte
+typedef struct {
+    unsigned long phone;
+    unsigned char token[SHA512_DIGEST_LENGTH];
+    unsigned char picture[USER_PICTURE_SIZE];
+    char nickname[USER_NICNAME_SIZE];
+    unsigned char flag; // USER_DELETED_FLAG or anything else
+    unsigned char ext;
 } User;
 
 FILE *udb = NULL;
-user_id_t DELETED_USER_ID = 0;
+const char DELETED_FLAG = 'D';
 
 // temp variables
 unsigned char hash[SHA512_DIGEST_LENGTH];
 unsigned char data[] = "A_TOKNE";
 
-void user_print(User *user) {
-    printf("----------------------\n");
-    printf("id: %ld\ncc: %d\nphone: %s\n", user->id, user->cc, user->phone);
+void user_print(User *user, user_id_t id) {
+    if (user->flag == DELETED_FLAG) {
+        printf("--------DELETED-------\n");
+    } else {
+        printf("----------------------\n");
+    }
+    printf("id: %ld\nphone: %ld\n", id, user->phone);
     printf("token: ");
 
     for (int i = 0; i < SHA512_DIGEST_LENGTH; i++)
@@ -37,21 +52,24 @@ void user_print(User *user) {
 
     printf("\nnickname: %s\npicture: ", user->nickname);
 
-    for (int i = 0; i < 13; i++)
+    for (int i = 0; i < USER_PICTURE_SIZE; i++)
         printf("%02x", user->picture[i]);
 
     printf("\n----------------------\n");
 }
 
 // return a pointer to a user
-void user_set(User *user, user_id_t user_id) {
-    user->id = user_id;
-    user->cc = 98;
+void user_set(User *user) {
+    user->phone = 9809133322111;
+    user->ext = EXT_JPG;
 
-    memcpy(user->phone, "09440001122", 12);
     memcpy(user->token, hash, SHA512_DIGEST_LENGTH);
-    memcpy(user->nickname, "nickname gg ez", 15);
-    getrandom(user->picture, member_size(User, picture), GRND_NONBLOCK);
+    memcpy(
+        user->nickname, 
+        "xGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZx", 
+        50
+    );
+    getrandom(user->picture, USER_PICTURE_SIZE, GRND_NONBLOCK);
 }
 
 // write N user into db
@@ -72,7 +90,7 @@ void write_n_users(user_id_t N) {
 
     // write N users
     for (; i <= N; i++) {
-        user_set(&user, i);
+        user_set(&user);
         fwrite(&user, sizeof(User), 1, udb);
     }
 }
@@ -84,8 +102,8 @@ void user_read(User *user, user_id_t id) {
 }
 
 void user_delete(user_id_t id) {
-    fseek(udb, sizeof(User) * (id - 1), SEEK_SET);
-    fwrite(&DELETED_USER_ID, sizeof(user_id_t), 1, udb);
+    fseek(udb, sizeof(User) * (id - 1) + 126, SEEK_SET);
+    fwrite(&DELETED_FLAG, sizeof(char), 1, udb);
 }
 
 user_id_t user_count() {
@@ -131,7 +149,7 @@ user_id_t user_count2() {
         return 0;
 
     while (fread(&user, sizeof(User), 1, udb)) {
-        if (user.id != 0)
+        if (user.flag != DELETED_FLAG)
             count++;
     }
 
@@ -141,7 +159,7 @@ user_id_t user_count2() {
 int main() {
     setup();
 
-    write_n_users(100000);
+    write_n_users(1000);
 
     clean_up();
     return 0;
