@@ -21,16 +21,27 @@ a database
 ## Schema
 
 ```c
-// 152 bytes in total
+// 152 byte
 typedef struct {
-    unsigned long id; // 8 bytes - 18,446,744,073,709,551,616
-    unsigned short cc; // 2 bytes - country code e.g. +1
-    char phone[12]; // temperary ...
-    unsigned char token[64]; // sha512 hash of token
+    user_id_t id;
+    unsigned short cc;
+    char phone[12];
+    unsigned char token[64];
     char nickname[52];
     unsigned char picture[13];
-    unsigned char ext; // type of the picture png/jpg/gif
+    unsigned char ext;
+} OldUser;
+
+// 128 byte
+typedef struct {
+    unsigned long phone;
+    unsigned char token[64];
+    unsigned char picture[4];
+    char nickname[50];
+    unsigned char flag; // USER_DELETED_FLAG or anything else
+    unsigned char ext;
 } User;
+
 ```
 
 ## Todos
@@ -39,3 +50,6 @@ typedef struct {
       hex 6 bytes 12 length or 3 two byte ints\
       91 84 85 37 07\
       look at the evey phone number samples to be sure about it
+
+* [ ] user_id + some random data = user_pic
+* [ ] find and implement the best data structure for phone number indexing
