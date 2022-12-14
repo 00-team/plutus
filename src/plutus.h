@@ -3,6 +3,7 @@
 // user database file stream
 
 #define USER_DB_FILENAME "user.bin"
+#define TRIE_DB_FILENAME "trie.bin"
 #define USER_PICTURE_SIZE 4
 #define USER_NICNAME_SIZE 50
 

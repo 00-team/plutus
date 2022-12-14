@@ -8,14 +8,17 @@ FILE *file_open(char *filename);
 
 
 extern FILE *udb;
+extern FILE *tdb;
 
 
 void setup(void) {
     udb = file_open(USER_DB_FILENAME);
+    tdb = file_open(TRIE_DB_FILENAME);
 }
 
 void clean_up(void) {
     if (udb != NULL) fclose(udb);
+    if (tdb != NULL) fclose(tdb);
 }
 
 FILE *file_open(char *filename) {

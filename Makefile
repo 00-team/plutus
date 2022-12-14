@@ -13,7 +13,7 @@ CFLAGS   =  -std=c99 -pedantic -Wall -Wno-deprecated-declarations -Wextra -Werro
 			-Os -DVERSION=\"${VERSION}\" ${INCS}
 
 
-FILES = plutus setup utils
+FILES = plutus setup utils components/trie
 SRC = $(addprefix ./src/, $(addsuffix .c, $(FILES)))
 OBJ = $(addprefix ./build/, $(addsuffix .o, $(FILES)))
 
@@ -27,6 +27,6 @@ plutus: ${OBJ}
 	@rm -rf build
 
 build:
-	@mkdir $@
+	@mkdir -p build/components
 
 .PHONY: all
