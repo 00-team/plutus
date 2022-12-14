@@ -18,6 +18,11 @@ a database
 1. flag the users for deleation and keep a list of them in to registery
    so the new user will be replacing the old ones
 
+1. about tries:\
+   first we need a dynamic length keys\
+   then we need dynamic caching of the first few layers\
+   read the first layers from the file and thats it we dont even need to update them
+
 ## Schema
 
 ```c
