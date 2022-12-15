@@ -7,7 +7,17 @@
 
 // digits 0-9
 #define NODE_ABC 10
-#define LINKS_LEN 9  // 09xx-xxx-xxxx
+
+// this two compine must be 9
+// 09xx-xxx-xxxx
+#define CACHE_LVL 3
+// cache size is 10 ** CACHE_LVL
+// 10 x 10 x 10
+#define CACHE_SIZ 1000
+#define LINKS_LEN 9 - CACHE_LVL
+
+FILE *phdb = NULL;
+FILE *pidb = NULL;
 
 // link is a number between 0 and 9
 typedef unsigned char link_t;
@@ -22,7 +32,9 @@ typedef size_t Node[NODE_ABC];
 // which is the same as the phone number
 typedef link_t Links[LINKS_LEN];
 
-FILE *tdb = NULL;
+size_t root[CACHE_SIZ];
+
+/*
 // roots is the first 10 node
 Node roots[NODE_ABC];
 size_t tdb_size;
@@ -100,7 +112,7 @@ void update(Links links, user_id_t value) {
 
     for (link_t i = 1; i < LINKS_LEN; i++) {
         printf(
-            "pos: %ld | i: %d | tdb_size: %ld | last_pos: %ld\n", 
+            "pos: %ld | i: %d | tdb_size: %ld | last_pos: %ld\n",
             pos, i, tdb_size, last_pos
         );
 
@@ -112,7 +124,7 @@ void update(Links links, user_id_t value) {
                 fseek(tdb, last_pos, SEEK_SET);
                 if (i == LINKS_LEN - 1)
                     temp[links[i]] = value;
-                else 
+                else
                     temp[links[i]] = tdb_size;
 
                 fwrite(temp, sizeof(Node), 1, tdb);
@@ -128,7 +140,7 @@ void update(Links links, user_id_t value) {
             fwrite(temp, sizeof(Node), 1, tdb);
             tdb_size += sizeof(Node);
         }
-        
+
         fseek(tdb, pos, SEEK_SET);
         fread(temp, sizeof(Node), 1, tdb);
 
@@ -161,18 +173,95 @@ void setup_roots(void) {
     tdb_size = sizeof(Node) * NODE_ABC;
 }
 
-void trie(void) {
-    Links links;
+*/
 
-    setup_roots();
+void print_info(void) {
+    printf("------------INFO------------\n");
+    printf("sizeof root :  %ld\n", sizeof(root));
+    printf("cache level :  %d\n", CACHE_LVL);
+    printf("cache size  :  %d\n", CACHE_SIZ);
+    printf("----------------------------\n");
+}
+
+
+void print_root(void) {
+    printf("-------------------------ROOT-------------------------\n");
+
+    printf("     ");
+    for (int i = 0; i < NODE_ABC; i++)
+        printf("%d        ", i);
+    
+    printf("\n  0. ");
+
+    for (int i = 0; i < CACHE_SIZ; i++) {
+        if (i % 10 == 0 && i != 0) printf("\n%3d. ", i / 10);
+        printf("%-8ld ", root[i]);
+    }
+
+    printf("\n------------------------------------------------------\n");
+}
+
+
+void node_empty(Node node) {
+    for (link_t i = 0; i < NODE_ABC; i++)
+        node[i] = 0;
+}
+
+
+void setup_root(void) {
+    long pidb_size = fsize(pidb);
+    long phdb_size = fsize(phdb);
+
+    fseek(phdb, 0, SEEK_SET);
+    fseek(pidb, 0, SEEK_SET);
+
+    if (pidb_size < 0 || phdb_size < 0) {
+        die("Error getting phone database size");
+        return;
+    }
+
+    if (pidb_size == 0 && phdb_size == 0) {
+        Node temp;
+        node_empty(temp);
+
+        for (size_t i = 0; i < CACHE_SIZ; i++) {
+            root[i] = i * sizeof(Node);
+            fwrite(&root[i], sizeof(size_t), 1, pidb);
+            fwrite(temp, sizeof(Node), 1, phdb);
+        }
+
+        return;
+    }
+
+    if (
+        pidb_size == sizeof(size_t) * CACHE_SIZ && 
+        (size_t)phdb_size >= sizeof(Node) * CACHE_SIZ
+    ) {
+        fread(root, sizeof(size_t), CACHE_SIZ, pidb);
+        return;
+    }
+
+    die("error loading the cache");
+}
+
+
+void trie(void) {
+
+    print_info();
+    setup_root();
+    // free(root);
+    // printf("cache: %d\n", 10 ^ CACHE_LEV);
+    // printf("links: %d\n", LINKS_LEN);
+    // Links links;
+
+    // setup_roots();
 
     // node_insert(&root, index, length-1, 79997);
-    phone_to_links("998836969", links);
-    print_links(links);
-    update(links, 696969);
-    print_trie();
+    // phone_to_links("998836969", links);
+    // print_links(links);
+    // update(links, 696969);
+    // print_trie();
 
-    
     // node_insert(&root, index, length, 88888);
 
     // phone_to_index("187779955", index, &length);
