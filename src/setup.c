@@ -8,17 +8,20 @@ FILE *file_open(char *filename);
 
 
 extern FILE *udb;
-extern FILE *tdb;
+extern FILE *phdb;
+extern FILE *pidb;
 
 
 void setup(void) {
-    udb = file_open(USER_DB_FILENAME);
-    tdb = file_open(TRIE_DB_FILENAME);
+    udb  = file_open(USER_DB_FILENAME);
+    phdb = file_open(PHONE_DB_FILENAME);
+    pidb = file_open(INDEX_DB_FILENAME);
 }
 
 void clean_up(void) {
-    if (udb != NULL) fclose(udb);
-    if (tdb != NULL) fclose(tdb);
+    if (udb  != NULL) fclose(udb);
+    if (phdb != NULL) fclose(phdb);
+    if (pidb != NULL) fclose(pidb);
 }
 
 FILE *file_open(char *filename) {
