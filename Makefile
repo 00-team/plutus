@@ -19,14 +19,15 @@ OBJ = $(addprefix ./build/, $(addsuffix .o, $(FILES)))
 
 all: plutus
 
-build/%.o: src/%.c src/plutus.h build
+build/%.o: src/%.c src/plutus.h dirs
 	@${CC} -c ${CFLAGS} $< -o $@
 
 plutus: ${OBJ}
 	@${CC} -o $@ ${OBJ} ${LDFLAGS}
 	@rm -rf build
 
-build:
+dirs:
 	@mkdir -p build/components
+	@mkdir -p data
 
-.PHONY: all
+.PHONY: all dirs
