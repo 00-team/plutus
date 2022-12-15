@@ -33,3 +33,9 @@ void die(const char *message, ...) {
 
     exit(1);
 }
+
+
+long fsize(FILE *f) {
+    fseek(f, 0, SEEK_END);
+    return ftell(f);
+}
