@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include <time.h>
 
 #include "../plutus.h"
 
@@ -10,10 +12,10 @@
 
 // this two compine must be 9
 // 09xx-xxx-xxxx
-#define CACHE_LVL 3
+#define CACHE_LVL 1
 // cache size is 10 ** CACHE_LVL
-// 10 x 10 x 10
-#define CACHE_SIZ 1000
+// 3: 10 x 10 x 10
+#define CACHE_SIZ 10
 #define LINKS_LEN 9 - CACHE_LVL
 
 FILE *phdb = NULL;
@@ -31,6 +33,12 @@ typedef size_t Node[NODE_ABC];
 // e.g.: 0 9 1 2 2 2
 // which is the same as the phone number
 typedef link_t Links[LINKS_LEN];
+
+// phone struct
+typedef struct {
+    size_t index;
+    Links links;
+} Phone;
 
 size_t root[CACHE_SIZ];
 
@@ -66,18 +74,7 @@ void find_node(Node node, link_t link_index) {
     }
 }
 
-void print_trie(void) {
-    printf("-------------------------ROOT-------------------------\n");
-    for (link_t i = 0; i < NODE_ABC; i++) {
-        printf("%d.", i);
-        print_node(roots[i]);
-    }
-    printf("------------------------------------------------------\n");
 
-    for (link_t i = 0; i < NODE_ABC; i++) {
-        find_node(roots[i], 1);
-    }
-}
 
 void print_links(Links links) {
     printf("link: ");
@@ -175,6 +172,19 @@ void setup_roots(void) {
 
 */
 
+// print functions
+void print_info(void);
+void print_root(void);
+void print_node(Node node);
+
+// utils
+Phone convert_phone(char *phone);
+
+// node functions
+void node_empty(Node node);
+bool node_update(char *phone_number, user_id_t value);
+
+// print functions
 void print_info(void) {
     printf("------------INFO------------\n");
     printf("sizeof root :  %ld\n", sizeof(root));
@@ -183,30 +193,237 @@ void print_info(void) {
     printf("----------------------------\n");
 }
 
-
 void print_root(void) {
     printf("-------------------------ROOT-------------------------\n");
 
     printf("     ");
     for (int i = 0; i < NODE_ABC; i++)
         printf("%d        ", i);
-    
+
     printf("\n  0. ");
 
     for (int i = 0; i < CACHE_SIZ; i++) {
-        if (i % 10 == 0 && i != 0) printf("\n%3d. ", i / 10);
+        if (i % 10 == 0 && i != 0)
+            printf("\n%3d. ", i / 10);
         printf("%-8ld ", root[i]);
     }
 
     printf("\n------------------------------------------------------\n");
 }
 
+void print_node(Node node) {
+    for (link_t i = 0; i < NODE_ABC; i++) {
+        // if (i != 0) printf("|");
+        printf(" %d:%-9ld", i, node[i]);
+    }
+    printf("\n");
+}
 
+// utils
+Phone convert_phone(char *phone_number) {
+    Phone phone;
+
+    char cache_index[CACHE_LVL];
+    strncpy(cache_index, phone_number, CACHE_LVL);
+
+    phone.index = strtoul(cache_index, NULL, 10);
+
+    for (link_t i = 0; i < LINKS_LEN; i++)
+        phone.links[i] = phone_number[i + CACHE_LVL] - '0';
+
+    return phone;
+}
+
+// node functions
 void node_empty(Node node) {
     for (link_t i = 0; i < NODE_ABC; i++)
         node[i] = 0;
 }
 
+// add the node or update it
+// return true if exists
+bool node_update(char *phone_number, user_id_t value) {
+    Phone phone = convert_phone(phone_number);
+    size_t pos = root[phone.index];
+    Node node;
+
+    /*
+
+    // debug
+    printf("pos = root[%ld]: %ld in file\n", phone.index, pos);
+    printf("links: ");
+    for (link_t i = 0; i < LINKS_LEN; i++)
+        printf("%d", phone.links[i]);
+    printf("\nvalue: %ld\n----------------------------\n", value);
+    // end debug
+
+    */
+
+    for (link_t i = 0; i < LINKS_LEN; i++) {
+        fseek(phdb, pos, SEEK_SET);
+        fread(node, sizeof(Node), 1, phdb);
+
+        // printf("%-4ld->", pos);
+        // print_node(node);
+
+        if (node[phone.links[i]] == 0) {
+            // printf("append ...\n");
+            // read the file size (last byte position)
+            size_t end_of_file = fsize(phdb);
+            // go back to this node for updating it
+            fseek(phdb, pos, SEEK_SET);
+            // update the node the node
+            node[phone.links[i]] = end_of_file;
+            // write the updated node
+            fwrite(node, sizeof(Node), 1, phdb);
+
+            // printf("start: %ld\n", start);
+
+            // go to the end of the file for appending to it
+            fseek(phdb, 0, SEEK_END);
+
+            // printf("%d|%d|%-4ld->", i, phone.links[i], pos);
+            // print_node(node);
+
+            // empty the node
+            node_empty(node);
+
+            // go forward once
+            i++;
+
+            for (; i < LINKS_LEN; i++) {
+                // printf("%d|%d|%-4ld->", i, phone.links[i], end_of_file);
+
+                end_of_file += sizeof(Node);
+
+                if (i == LINKS_LEN - 1)
+                    node[phone.links[i]] = value;
+                else
+                    node[phone.links[i]] = end_of_file;
+
+                // print_node(node);
+
+                fwrite(node, sizeof(Node), 1, phdb);
+                node_empty(node);
+
+                // printf("append: %d\n", i);
+            }
+
+            return false;
+        }
+
+        if (i == LINKS_LEN - 1) {
+            bool exists = node[phone.links[i]] != 0;
+            // printf("-----------------------------------\n");
+            // printf("%-4ld->", pos);
+            // print_node(node);
+
+            node[phone.links[i]] = value;
+
+            // printf("%-4ld->", pos);
+            // print_node(node);
+
+            fseek(phdb, pos, SEEK_SET);
+            fwrite(node, sizeof(Node), 1, phdb);
+
+            return exists;
+        }
+
+        pos = node[phone.links[i]];
+    }
+
+    return true;
+}
+
+// search for a node
+user_id_t node_search(char *phone_number) {
+    Phone phone = convert_phone(phone_number);
+    size_t pos = root[phone.index];
+    Node node;
+
+    /*
+
+    // debug
+    printf("pos = root[%ld]: %ld in file\n", phone.index, pos);
+    printf("links: ");
+    for (link_t i = 0; i < LINKS_LEN; i++)
+        printf("%d", phone.links[i]);
+    printf("\n");
+    // end debug
+
+    */
+
+    for (link_t i = 0; i < LINKS_LEN; i++) {
+        fseek(phdb, pos, SEEK_SET);
+        fread(node, sizeof(Node), 1, phdb);
+        // printf("%-4ld->", pos);
+        // print_node(node);
+
+        if (node[phone.links[i]] == 0) {
+            // printf("phone not found!\n");
+            return 0;
+        }
+
+        if (i == LINKS_LEN - 1) {
+            // printf("node[links[i]]: %ld\n", node[phone.links[i]]);
+            return node[phone.links[i]];
+        }
+
+        /*
+        if (node[links[i]] == 0) {
+            printf("append ...\n");
+            // read the file size (last byte position)
+            size_t end_of_file = fsize(phdb);
+            // go back to this node for updating it
+            fseek(phdb, pos, SEEK_SET);
+            // update the node the node
+            node[links[i]] = end_of_file;
+            // write the updated node
+            fwrite(node, sizeof(Node), 1, phdb);
+
+            // printf("start: %ld\n", start);
+
+            // go to the end of the file for appending to it
+            fseek(phdb, 0, SEEK_END);
+
+            printf("%d|%d|%-4ld->", i, links[i], pos);
+            print_node(node);
+
+            // empty the node
+            node_empty(node);
+
+            // go forward once
+            i++;
+
+            for (; i < LINKS_LEN; i++) {
+
+                printf("%d|%d|%-4ld->", i, links[i], end_of_file);
+
+
+                end_of_file += sizeof(Node);
+
+                if (i == LINKS_LEN - 1)
+                    node[links[i]] = value;
+                else
+                    node[links[i]] = end_of_file;
+
+                print_node(node);
+
+                fwrite(node, sizeof(Node), 1, phdb);
+                node_empty(node);
+
+                // printf("append: %d\n", i);
+            }
+
+            return false;
+        }
+        */
+
+        pos = node[phone.links[i]];
+    }
+
+    return 0;
+}
 
 void setup_root(void) {
     long pidb_size = fsize(pidb);
@@ -233,10 +450,8 @@ void setup_root(void) {
         return;
     }
 
-    if (
-        pidb_size == sizeof(size_t) * CACHE_SIZ && 
-        (size_t)phdb_size >= sizeof(Node) * CACHE_SIZ
-    ) {
+    if (pidb_size == sizeof(size_t) * CACHE_SIZ &&
+        (size_t)phdb_size >= sizeof(Node) * CACHE_SIZ) {
         fread(root, sizeof(size_t), CACHE_SIZ, pidb);
         return;
     }
@@ -244,47 +459,56 @@ void setup_root(void) {
     die("error loading the cache");
 }
 
-
 void trie(void) {
-
     print_info();
     setup_root();
-    // free(root);
-    // printf("cache: %d\n", 10 ^ CACHE_LEV);
-    // printf("links: %d\n", LINKS_LEN);
-    // Links links;
 
-    // setup_roots();
+    node_fill();
 
-    // node_insert(&root, index, length-1, 79997);
-    // phone_to_links("998836969", links);
-    // print_links(links);
-    // update(links, 696969);
-    // print_trie();
+    /*
 
-    // node_insert(&root, index, length, 88888);
+    clock_t begin = clock();
 
-    // phone_to_index("187779955", index, &length);
-    // node_insert(&root, index, length, 3333);
 
-    // Node *child = malloc(sizeof(Node));
-    // Node *temp  = &root;
-    // // temp = &root;
+    // 219267107 908834300
+    // 744789114 001454633
+    // 824810336 308247332
+    // 931613555 583354822
+    // 226621675 827004940
+    // 183053716 392638873
+    // 560779926 688025154
+    // 158185227 100162113
+    // 790419624 427592638
+    // 346583005 088118677
 
-    // printf("root.user_id: %ld\n", root.user_id);
-    // printf("temp.user_id: %ld\n", temp->user_id);
 
-    // for (int i = 0; i < length; i++) {
-    //     child->user_id = i * 2 + i;
-    //     temp->children[index[i]] = child;
-    //     temp = child;
+    printf("0921 926 7107 I: %d\n", node_update("219267107", 908834300));
+    printf("0974 478 9114 I: %d\n", node_update("744789114", 991454633));
+    printf("0982 481 0336 I: %d\n", node_update("824810336", 308247332));
+    printf("0993 161 3555 I: %d\n", node_update("931613555", 583354822));
+    printf("0922 662 1675 I: %d\n", node_update("226621675", 827004940));
+    printf("0918 305 3716 I: %d\n", node_update("183053716", 392638873));
+    printf("0956 077 9926 I: %d\n", node_update("560779926", 688025154));
+    printf("0915 818 5227 I: %d\n", node_update("158185227", 100162113));
+    printf("0979 041 9624 I: %d\n", node_update("790419624", 427592638));
+    printf("0934 658 3005 I: %d\n", node_update("346583005", 688118677));
 
-    //     child = malloc(sizeof(Node));
-    // }
 
-    // printf("----------------------------\n");
-    // print_trie();
-    // printf("----------------------------\n");
+    printf("X969 359 0582 search: %ld\n", node_search("693590582"));
+    printf("0922 662 1675 search: %ld\n", node_search("226621675"));
+    printf("X920 737 0017 search: %ld\n", node_search("207370017"));
+    printf("0934 658 3005 search: %ld\n", node_search("346583005"));
+    printf("X912 893 5770 search: %ld\n", node_search("128935770"));
+
+
+    printf("0915 818 5227 D: %d\n", node_update("158185227", 0));
+    printf("X915 818 5227 S: %ld\n", node_search("158185227"));
+
+
+    clock_t end = clock();
+    printf("speed: %ld\n", end - begin);
+
+    */
 }
 
 /*
