@@ -30,4 +30,10 @@ dirs:
 	@mkdir -p build/components
 	@mkdir -p data
 
-.PHONY: all dirs
+dev: plutus
+	@printf "\E[H\E[3J"
+	@clear
+	@rm data/phone*
+	@./plutus
+
+.PHONY: all dirs dev
