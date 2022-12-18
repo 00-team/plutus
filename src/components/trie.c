@@ -463,8 +463,6 @@ void trie(void) {
     print_info();
     setup_root();
 
-    node_fill();
-
     /*
 
     clock_t begin = clock();

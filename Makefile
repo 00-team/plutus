@@ -4,8 +4,8 @@ VERSION = 0.1.0
 CC = cc
 
 # includes and libs
-INCS = -I/usr/include/openssl
-LIBS = -lcrypto
+INCS = # -I/usr/include/openssl
+LIBS = # -lcrypto
 
 # flags
 LDFLAGS  = ${LIBS}
@@ -13,7 +13,7 @@ CFLAGS   =  -std=c99 -pedantic -Wall -Wno-deprecated-declarations -Wextra -Werro
 			-Os -DVERSION=\"${VERSION}\" ${INCS}
 
 
-FILES = plutus setup utils components/trie
+FILES = plutus utils components/server
 SRC = $(addprefix ./src/, $(addsuffix .c, $(FILES)))
 OBJ = $(addprefix ./build/, $(addsuffix .o, $(FILES)))
 
@@ -33,7 +33,6 @@ dirs:
 dev: plutus
 	@printf "\E[H\E[3J"
 	@clear
-	@rm data/phone*
 	@./plutus
 
 .PHONY: all dirs dev

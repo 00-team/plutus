@@ -8,18 +8,18 @@
 #include "plutus.h"
 
 
-FILE *udb = NULL;
-const char DELETED_FLAG = 'D';
+// FILE *udb = NULL;
+// const char DELETED_FLAG = 'D';
 
-void trie(void);
+void server(void);
 
 int main() {
-    setup();
-    trie();
+    // setup();
+    server();
 
     // write_n_users(1000);
 
-    clean_up();
+    // clean_up();
     return 0;
 
     // clock_t begin = clock();
