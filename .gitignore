@@ -133,3 +133,6 @@ dmypy.json
 *.bin
 plutus
 data/
+
+# ignore all the object files
+*.o
