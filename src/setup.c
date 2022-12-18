@@ -12,13 +12,13 @@ extern FILE *phdb;
 extern FILE *pidb;
 
 
-void setup(void) {
+void setup_files(void) {
     udb  = file_open(USER_DB_FILENAME);
     phdb = file_open(PHONE_DB_FILENAME);
     pidb = file_open(INDEX_DB_FILENAME);
 }
 
-void clean_up(void) {
+void clean_up_files(void) {
     if (udb  != NULL) fclose(udb);
     if (phdb != NULL) fclose(phdb);
     if (pidb != NULL) fclose(pidb);
