@@ -1,34 +1,23 @@
 #include <stdio.h>
 #include <sys/random.h>
 #include <openssl/sha.h>
+#include <string.h>
 
 #include "../plutus.h"
 
-extern FILE *udb = NULL;
-extern const char DELETED_FLAG = 'D';
+FILE *udb = NULL;
+const char DELETED_FLAG = 'D';
 
-// 152 byte
+// 134 byte
 typedef struct {
-    user_id_t id;
     unsigned short cc;
     char phone[12];
-    unsigned char token[64];
-    char nickname[52];
-    unsigned char picture[13];
+    unsigned char flag;  // DELETED_FLAG or anything else
     unsigned char ext;
-} OldUser;
-
-// 128 byte
-typedef struct {
-    unsigned long phone;
-    unsigned char token[SHA512_DIGEST_LENGTH];
     unsigned char picture[USER_PICTURE_SIZE];
+    unsigned char token[SHA512_DIGEST_LENGTH];
     char nickname[USER_NICNAME_SIZE];
-    unsigned char flag; // USER_DELETED_FLAG or anything else
-    unsigned char ext;
 } User;
-
-
 
 // temp variables
 unsigned char hash[SHA512_DIGEST_LENGTH];
@@ -40,7 +29,7 @@ void user_print(User *user, user_id_t id) {
     } else {
         printf("----------------------\n");
     }
-    printf("id: %ld\nphone: %ld\n", id, user->phone);
+    printf("id: %ld\nphone: +%d %s\n", id, user->cc, user->phone);
     printf("token: ");
 
     for (int i = 0; i < SHA512_DIGEST_LENGTH; i++)
@@ -54,17 +43,17 @@ void user_print(User *user, user_id_t id) {
     printf("\n----------------------\n");
 }
 
+
 // return a pointer to a user
 void user_set(User *user) {
-    user->phone = 9809133322111;
     user->ext = EXT_JPG;
+    user->cc = 98;
+    user->flag = 0;
 
+    memcpy(user->phone, "09223334444", 12);
     memcpy(user->token, hash, SHA512_DIGEST_LENGTH);
-    memcpy(
-        user->nickname, 
-        "xGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZx", 
-        50
-    );
+    memcpy(user->nickname, "xGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZx",
+           50);
     getrandom(user->picture, USER_PICTURE_SIZE, GRND_NONBLOCK);
 }
 
@@ -137,11 +126,10 @@ user_id_t user_count2() {
     if (current_pos < 0)
         return 0;
 
-    // go to end of the file
-    int cur = fseek(udb, 0, SEEK_SET);
+    // go to start of the file
     // check if there was any error
     // in case if any error just return 0 as user count
-    if (cur != 0)
+    if (fseek(udb, 0, SEEK_SET) != 0)
         return 0;
 
     while (fread(&user, sizeof(User), 1, udb)) {
@@ -151,3 +139,4 @@ user_id_t user_count2() {
 
     return count;
 }
+

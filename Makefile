@@ -1,38 +1,44 @@
-# plutus version
+
 VERSION = 0.1.0
-# C Compiler
 CC = cc
 
 # includes and libs
-INCS = # -I/usr/include/openssl
-LIBS = # -lcrypto
+INCS = -I/usr/include/openssl
+LIBS = -lcrypto
 
 # flags
-LDFLAGS  = ${LIBS}
+LDFLAGS  = $(LIBS)
 CFLAGS   =  -std=c99 -pedantic -Wall -Wno-deprecated-declarations -Wextra -Werror \
-			-Os -DVERSION=\"${VERSION}\" ${INCS}
+			-Os -DVERSION=\"$(VERSION)\" $(INCS)
 
 
-FILES = plutus utils components/server
+USER = $(addprefix user/, user phone)
+FILES = plutus setup utils server $(USER)
+HEADERS = src/plutus.h
 SRC = $(addprefix ./src/, $(addsuffix .c, $(FILES)))
 OBJ = $(addprefix ./build/, $(addsuffix .o, $(FILES)))
 
-all: plutus
 
-build/%.o: src/%.c src/plutus.h dirs
-	@${CC} -c ${CFLAGS} $< -o $@
+build/%.o: src/%.c dirs $(HEADERS)
+	@$(CC) -c $(CFLAGS) $< -o $@
 
-plutus: ${OBJ}
-	@${CC} -o $@ ${OBJ} ${LDFLAGS}
-	@rm -rf build
+
+plutus: $(OBJ)
+	$(CC) -o $@ $(OBJ) $(LDFLAGS)
+	rm -rf build
+
 
 dirs:
-	@mkdir -p build/components
-	@mkdir -p data
+	mkdir -p data build/user
+
 
 dev: plutus
-	@printf "\E[H\E[3J"
-	@clear
-	@./plutus
+	printf "\E[H\E[3J"
+	clear
+	./plutus
 
-.PHONY: all dirs dev
+
+
+.PHONY: dirs dev
+.SILENT: dirs dev plutus
+.DEFAULT: plutus
