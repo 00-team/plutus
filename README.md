@@ -58,3 +58,5 @@ typedef struct {
 
 * [ ] user_id + some random data = user_pic
 * [ ] find and implement the best data structure for phone number indexing
+* [ ] test all native types to ensure that all the types sizes are as expected\
+      for example in my machine type `long` is `8` byte but the standard says that its `4` byte
