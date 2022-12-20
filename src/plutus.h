@@ -3,16 +3,13 @@
 #define PHONE_DB_FILENAME "data/phone.bin"
 #define INDEX_DB_FILENAME "data/phone_index.bin"
 
-#define USER_PICTURE_SIZE 4
-#define USER_NICNAME_SIZE 50
 
-typedef unsigned long user_id_t;
 
-enum {
-    EXT_JPG,
-    EXT_PNG,
-    EXT_GIF,
-};
+// enum {
+//     EXT_JPG,
+//     EXT_PNG,
+//     EXT_GIF,
+// };
 
 // setup
 void setup_files(void);
@@ -27,3 +24,4 @@ long fsize(FILE *f);
 void server_run(void);
 
 void phone_setup(void);
+void user_setup(void);

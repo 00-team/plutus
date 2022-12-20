@@ -10,6 +10,7 @@
 
 int main() {
     setup_files();
+    user_setup();
     phone_setup();
 
     server_run();

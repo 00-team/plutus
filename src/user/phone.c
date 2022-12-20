@@ -6,6 +6,7 @@
 #include <time.h>
 
 #include "../plutus.h"
+#include "user.h"
 
 // digits 0-9
 #define NODE_ABC 10

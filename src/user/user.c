@@ -1,23 +1,16 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/random.h>
 #include <openssl/sha.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "../plutus.h"
+#include "user.h"
 
 FILE *udb = NULL;
 const char DELETED_FLAG = 'D';
-
-// 134 byte
-typedef struct {
-    unsigned short cc;
-    char phone[12];
-    unsigned char flag;  // DELETED_FLAG or anything else
-    unsigned char ext;
-    unsigned char picture[USER_PICTURE_SIZE];
-    unsigned char token[SHA512_DIGEST_LENGTH];
-    char nickname[USER_NICNAME_SIZE];
-} User;
+static user_id_t users_counts = 0;
 
 // temp variables
 unsigned char hash[SHA512_DIGEST_LENGTH];
@@ -46,7 +39,7 @@ void user_print(User *user, user_id_t id) {
 
 // return a pointer to a user
 void user_set(User *user) {
-    user->ext = EXT_JPG;
+    user->ext = 0;
     user->cc = 98;
     user->flag = 0;
 
@@ -91,52 +84,58 @@ void user_delete(user_id_t id) {
     fwrite(&DELETED_FLAG, sizeof(char), 1, udb);
 }
 
-user_id_t user_count() {
-    // get the current position
-    long current_pos = ftell(udb);
-    // check if there was any error
-    // in case if any error just return 0 as user count
-    if (current_pos < 0)
-        return 0;
 
-    // go to end of the file
-    fseek(udb, 0, SEEK_END);
-    // get the current position
-    long db_size = ftell(udb);
-    // check if there was any error
-    // in case if any error just return 0 as user count
-    if (db_size < 0)
-        return 0;
-
-    fseek(udb, current_pos, SEEK_SET);
-
-    // divide the size of database to the size of a user
-    return db_size / sizeof(User);
-}
-
-user_id_t user_count2() {
+void user_get(char *request, char *response) {
     User user;
-    user_id_t count = 0;
+    user_id_t user_id = *(user_id_t *)request;
+    long pos = sizeof(User) * (user_id - 1);
 
-    // get the current position
-    long current_pos = ftell(udb);
+    /*
+       response[0] is type of the response 
+       value 4 for means "user not found / out of range / deleted"
+       and any other value means "success"
+    */
 
-    // check if there was any error
-    // in case if any error just return 0 as user count
-    if (current_pos < 0)
-        return 0;
-
-    // go to start of the file
-    // check if there was any error
-    // in case if any error just return 0 as user count
-    if (fseek(udb, 0, SEEK_SET) != 0)
-        return 0;
-
-    while (fread(&user, sizeof(User), 1, udb)) {
-        if (user.flag != DELETED_FLAG)
-            count++;
+    if (pos >= fsize(udb)) {
+        response[0] = 4;
+        return;
     }
 
-    return count;
+    fseek(udb, pos, SEEK_SET);
+    fread(&user, sizeof(User), 1, udb);
+    
+    if (user.flag == DELETED_FLAG) {
+        response[0] = 4;
+        return;
+    }
+
+    response[0] = 0;
+    response++;
+    memcpy(response, &user, sizeof(User));
 }
 
+
+void user_count(char *request, char *response) {
+    bool exact = *(bool *)request;
+    user_id_t count;
+
+    if (exact) {
+        memcpy(response, &users_counts, sizeof(user_id_t));
+        return;
+    }
+    
+    count = fsize(udb) / sizeof(User);
+    memcpy(response, &count, sizeof(user_id_t));
+}
+
+
+void user_setup(void) {
+    User user;
+    users_counts = fsize(udb) / sizeof(User);
+    fseek(udb, 0, SEEK_SET);
+
+    while (fread(&user, sizeof(User), 1, udb)) {
+        if (user.flag == DELETED_FLAG)
+            users_counts--;
+    }
+}

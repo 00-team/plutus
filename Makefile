@@ -12,9 +12,13 @@ CFLAGS   =  -std=c99 -pedantic -Wall -Wno-deprecated-declarations -Wextra -Werro
 			-Os -DVERSION=\"$(VERSION)\" $(INCS)
 
 
-USER = $(addprefix user/, user phone)
-FILES = plutus setup utils server $(USER)
-HEADERS = src/plutus.h
+FILES = plutus setup utils \
+		server/server \
+		user/user user/phone
+
+HEADER = plutus user/user server/api
+
+HEADERS = $(addprefix ./src/, $(addsuffix .h, $(HEADER)))
 SRC = $(addprefix ./src/, $(addsuffix .c, $(FILES)))
 OBJ = $(addprefix ./build/, $(addsuffix .o, $(FILES)))
 
@@ -22,23 +26,25 @@ OBJ = $(addprefix ./build/, $(addsuffix .o, $(FILES)))
 build/%.o: src/%.c dirs $(HEADERS)
 	@$(CC) -c $(CFLAGS) $< -o $@
 
-
-plutus: $(OBJ)
+plutus: clear $(OBJ)
 	$(CC) -o $@ $(OBJ) $(LDFLAGS)
 	rm -rf build
 
-
 dirs:
 	mkdir -p data build/user
+	mkdir -p build/server
 
-
-dev: plutus
+clear:
 	printf "\E[H\E[3J"
 	clear
+
+dev: clear plutus
 	./plutus
 
+test: clear
+	python scripts/client.py
 
 
-.PHONY: dirs dev
-.SILENT: dirs dev plutus
+.PHONY: dirs dev test clear
+.SILENT: dirs dev test clear plutus
 .DEFAULT: plutus
