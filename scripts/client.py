@@ -15,7 +15,11 @@ def bin2str(data: bytes) -> str:
 
 
 class UserNotFound(Exception):
-    pass
+    user_id: int
+
+    def __init__(self, *args, user_id) -> None:
+        super().__init__(*args)
+        self.user_id = user_id
 
 
 class RQT(Enum):
@@ -37,15 +41,15 @@ class User:
     token: bytes
     phone: tuple[int, str]
 
-    def __init__(self, **kwargs) -> None:
-        self.user_id = kwargs['user_id']
-        self.nickname = kwargs['nickname']
-        self.picture = kwargs['picture']
-        self.token = kwargs['token']
-        self.phone = kwargs['phone']
+    def __init__(self, user_id, phone, token, nickname, picture) -> None:
+        self.user_id = user_id
+        self.phone = phone
+        self.token = token
+        self.nickname = nickname
+        self.picture = picture
 
     @classmethod
-    def count(cls, exact=False):
+    def count(cls, exact=False) -> int:
         # get user count
         # by default user count is based on files size
         request = RQT.USER_COUNT.value + exact.to_bytes(1, BYTE_ORDER)
@@ -75,18 +79,18 @@ class User:
         sock.send(RQT.USER_GET.value + user_id_b)
         response = sock.recv(135)
 
-        if response[0] == b'\x04':
-            raise UserNotFound
+        if response[0] == 4:
+            raise UserNotFound(user_id=user_id)
 
         # cc, phone, flag, ext, picture, token, nickname
         user_struct = struct.unpack('H12sBB4s64s50s', response[1:])
 
         return cls(
-            user_id=user_id,
+            user_id,
+            phone=(user_struct[0], bin2str(user_struct[1])),
+            token=user_struct[5],
             nickname=bin2str(user_struct[6]),
             picture=(user_id_b + user_struct[4]).hex() + '.png',
-            token=user_struct[5],
-            phone=(user_struct[0], bin2str(user_struct[1]))
         )
         # typedef struct {
         #     unsigned short cc;
@@ -124,7 +128,12 @@ def connect():
 
 def main():
     connect()
-    print('user: ', User.get(12))
+    try:
+        User.get(12)
+        User.get(97002)
+    except UserNotFound as e:
+        print('User %d Not Found' % e.user_id)
+
     print('count: ', User.count())
     sock.close()
 
