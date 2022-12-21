@@ -16,7 +16,7 @@ FILES = plutus setup utils \
 		server/server \
 		user/user user/phone
 
-HEADER = plutus user/user server/api
+HEADER = plutus user/user user/phone server/api
 
 HEADERS = $(addprefix ./src/, $(addsuffix .h, $(HEADER)))
 SRC = $(addprefix ./src/, $(addsuffix .c, $(FILES)))

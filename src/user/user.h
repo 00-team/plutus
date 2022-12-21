@@ -2,6 +2,7 @@
 #define USER_PICTURE_SIZE 4
 #define USER_NICNAME_SIZE 50
 #define USER_TOKEN_SIZE 64
+#define USER_EMPTY_SIZE 100000 // 0.8 MegaBytes 100K user ids
 
 typedef unsigned long user_id_t;
 
@@ -19,3 +20,4 @@ typedef struct {
 void user_get(char *request, char *response);
 void user_delete(char *request, char *response);
 void user_count(char *request, char *response);
+void user_login(char *request, char *response);

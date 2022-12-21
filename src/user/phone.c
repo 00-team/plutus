@@ -6,40 +6,11 @@
 #include <time.h>
 
 #include "../plutus.h"
-#include "user.h"
+#include "phone.h"
 
-// digits 0-9
-#define NODE_ABC 10
-
-// this two compine must be 9
-// 09xx-xxx-xxxx
-#define CACHE_LVL 1
-// cache size is 10 ** CACHE_LVL
-// 3: 10 x 10 x 10
-#define CACHE_SIZ 10
-#define LINKS_LEN 9 - CACHE_LVL
 
 FILE *phdb = NULL;
 FILE *pidb = NULL;
-
-// link is a number between 0 and 9
-typedef unsigned char link_t;
-// Node is a sequence of positions in the file to other nodes
-// 0: pos of a node
-// 1: empty
-// ...
-// 9: pos of a node
-typedef size_t Node[NODE_ABC];
-// links is a sequence of numbers between 0 and 9
-// e.g.: 0 9 1 2 2 2
-// which is the same as the phone number
-typedef link_t Links[LINKS_LEN];
-
-// phone struct
-typedef struct {
-    size_t index;
-    Links links;
-} Phone;
 
 size_t root[CACHE_SIZ];
 
@@ -73,7 +44,7 @@ void print_node(Node node) {
 
 // convert a phone number string
 // to root index and links
-Phone convert_phone(char *phone_number) {
+Phone phone_convert(char *phone_number) {
     Phone phone;
 
     char cache_index[CACHE_LVL];
@@ -90,14 +61,13 @@ Phone convert_phone(char *phone_number) {
 
 // add the node or update it
 // return true if exists
-bool node_update(char *phone_number, user_id_t value) {
-    Phone phone = convert_phone(phone_number);
-    size_t pos = root[phone.index];
+bool phone_update(Phone *phone, user_id_t value) {
+    size_t pos = root[phone->index];
     Node node;
     link_t link = 0;
 
     for (link_t i = 0; i < LINKS_LEN; i++) {
-        link = phone.links[i];
+        link = phone->links[i];
         fseek(phdb, pos, SEEK_SET);
         fread(node, sizeof(Node), 1, phdb);
 
@@ -124,7 +94,7 @@ bool node_update(char *phone_number, user_id_t value) {
 
             // loop over ramaning links for writing them
             for (i++; i < LINKS_LEN; i++) {
-                link = phone.links[i];
+                link = phone->links[i];
 
                 // every node after this will be written at the next block
                 // so we just imagine that this will be the next link position
@@ -164,15 +134,14 @@ bool node_update(char *phone_number, user_id_t value) {
 
 
 // search for a node
-user_id_t node_search(char *phone_number) {
-    Phone phone = convert_phone(phone_number);
-    size_t pos = root[phone.index];
+user_id_t phone_search(Phone *phone) {
+    size_t pos = root[phone->index];
     Node node;
 
     for (link_t i = 0; i < LINKS_LEN; i++) {
         fseek(phdb, pos, SEEK_SET);
         fread(node, sizeof(Node), 1, phdb);
-        pos = node[phone.links[i]];
+        pos = node[phone->links[i]];
 
         if (pos == 0) return 0;
         if (i == LINKS_LEN - 1) return pos;

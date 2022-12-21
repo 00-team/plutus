@@ -31,6 +31,7 @@ class RQT(Enum):
     USER_GET = auto()
     USER_DEL = auto()
     USER_COUNT = auto()
+    USER_LOGIN = auto()
     USER_UPDATE = auto()
 
 
@@ -65,7 +66,14 @@ class User:
         # provide a phone number and a token
         # if user the exists update the token and return it
         # if not return a new created user
-        pass
+        request = RQT.USER_LOGIN.value + cc.to_bytes(2, BYTE_ORDER)
+        request += phone.encode() + token
+        print(len(request))
+
+        print(request.hex('-'))
+
+        sock.send(request)
+        sock.recv(135)
 
     @classmethod
     def get(cls, user_id: int, input_token: bytes = None):
@@ -93,15 +101,6 @@ class User:
             nickname=bin2str(user_struct[6]),
             picture=(user_id_b + user_struct[4]).hex() + '.png',
         )
-        # typedef struct {
-        #     unsigned short cc;
-        #     char phone[12];
-        #     unsigned char flag;  // DELETED_FLAG or anything else
-        #     unsigned char ext;
-        #     unsigned char picture[USER_PICTURE_SIZE];
-        #     char token[USER_TOKEN_SIZE];
-        #     char nickname[USER_NICNAME_SIZE];
-        # } User;
 
     def update(self):
         pass
@@ -139,14 +138,18 @@ def connect():
 
 def main():
     connect()
-    try:
-        user = User.get(8)
-        user.delete()
-        user.delete()
-        # User.get(13)
-    except UserNotFound as e:
-        print('User %d Not Found' % e.user_id)
+    # try:
+    #     user = User.get(8)
+    #     user.delete()
+    #     user.delete()
+    #     # User.get(13)
+    # except UserNotFound as e:
+    #     print('User %d Not Found' % e.user_id)
 
+    randomtoken = sha3_512(b'gg token ez')
+    print(randomtoken.hexdigest())
+
+    User.login(98, '091244444444', randomtoken.digest())
     print('count: ', User.count())
     print('count exact: ', User.count(True))
     sock.close()

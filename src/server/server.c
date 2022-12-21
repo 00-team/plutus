@@ -59,6 +59,8 @@ void server_run(void) {
         if (rq_length < MIN_REQUEST_SIZE || RQT >= RQT_LENGTH)
             continue;
         
+        printf("rq_length: %ld\n", rq_length);
+        
         API api = apis[RQT];
         api.func(&buffer[2], response);
 
