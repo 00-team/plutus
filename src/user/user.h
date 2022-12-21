@@ -17,4 +17,5 @@ typedef struct {
 } User;
 
 void user_get(char *request, char *response);
+void user_delete(char *request, char *response);
 void user_count(char *request, char *response);

@@ -43,6 +43,7 @@ class User:
 
     def __init__(self, user_id, phone, token, nickname, picture) -> None:
         self.user_id = user_id
+        self.user_id_b = user_id.to_bytes(8, BYTE_ORDER)
         self.phone = phone
         self.token = token
         self.nickname = nickname
@@ -106,7 +107,17 @@ class User:
         pass
 
     def delete(self):
-        pass
+
+        if self.user_id == -1:
+            raise UserNotFound(user_id=-1)
+
+        sock.send(RQT.USER_DEL.value + self.user_id_b)
+        response = sock.recv(1)
+
+        if response == b'\x04':
+            raise UserNotFound(user_id=self.user_id)
+
+        self.user_id = -1
 
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}: {self.user_id}>'
@@ -129,12 +140,15 @@ def connect():
 def main():
     connect()
     try:
-        User.get(12)
-        User.get(97002)
+        user = User.get(8)
+        user.delete()
+        user.delete()
+        # User.get(13)
     except UserNotFound as e:
         print('User %d Not Found' % e.user_id)
 
     print('count: ', User.count())
+    print('count exact: ', User.count(True))
     sock.close()
 
 

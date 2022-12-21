@@ -79,16 +79,9 @@ void user_read(User *user, user_id_t id) {
     fread(user, sizeof(User), 1, udb);
 }
 
-void user_delete(user_id_t id) {
-    fseek(udb, sizeof(User) * (id - 1) + 126, SEEK_SET);
-    fwrite(&DELETED_FLAG, sizeof(char), 1, udb);
-}
-
-
-void user_get(char *request, char *response) {
-    User user;
-    user_id_t user_id = *(user_id_t *)request;
-    long pos = sizeof(User) * (user_id - 1);
+char check_user_id(char *buffer, user_id_t *user_id, User *user) {
+    *user_id = *(user_id_t *)buffer;
+    long pos = sizeof(User) * (*user_id - 1);
 
     /*
        response[0] is type of the response 
@@ -96,15 +89,30 @@ void user_get(char *request, char *response) {
        and any other value means "success"
     */
 
-    if (pos >= fsize(udb)) {
-        response[0] = 4;
-        return;
-    }
+    if (pos < 0 || pos >= fsize(udb))
+        return -1;
 
     fseek(udb, pos, SEEK_SET);
-    fread(&user, sizeof(User), 1, udb);
+    fread(user, sizeof(User), 1, udb);
+    fseek(udb, pos, SEEK_SET);
     
-    if (user.flag == DELETED_FLAG) {
+    if (user->flag == DELETED_FLAG)
+        return -1;
+    
+    return 0;
+}
+
+
+void user_get(char *request, char *response) {
+    User user;
+    user_id_t user_id = 0;
+
+    /*
+       response[0] is type of the response 
+       value 4 for means "user not found / out of range / deleted"
+       and any other value means "success"
+    */
+    if (check_user_id(request, &user_id, &user) == -1) {
         response[0] = 4;
         return;
     }
@@ -114,6 +122,28 @@ void user_get(char *request, char *response) {
     memcpy(response, &user, sizeof(User));
 }
 
+
+void user_delete(char *request, char *response) {
+    User user;
+    user_id_t user_id = 0;
+
+    /*
+       response[0] is type of the response 
+       value 4 for means "user not found / out of range / deleted"
+       and any other value means "success"
+    */
+    if (check_user_id(request, &user_id, &user) == -1) {
+        response[0] = 4;
+        return;
+    }
+
+    user.flag = DELETED_FLAG;
+    fwrite(&user, sizeof(User), 1, udb);
+
+    users_counts--;
+
+    response[0] = 0;
+}
 
 void user_count(char *request, char *response) {
     bool exact = *(bool *)request;
