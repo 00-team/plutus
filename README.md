@@ -51,12 +51,8 @@ typedef struct {
 
 ## Todos
 
-* [ ] phone number from string to bytes\
-      hex 6 bytes 12 length or 3 two byte ints\
-      91 84 85 37 07\
-      look at the evey phone number samples to be sure about it
-
 * [ ] user_id + some random data = user_pic
-* [ ] find and implement the best data structure for phone number indexing
+* [x] find and implement the best data structure for phone number indexing: Tries
 * [ ] test all native types to ensure that all the types sizes are as expected\
       for example in my machine type `long` is `8` byte but the standard says that its `4` byte
+* [ ] a visual representation for the phone index
