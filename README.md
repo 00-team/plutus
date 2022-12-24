@@ -56,3 +56,5 @@ typedef struct {
 * [ ] test all native types to ensure that all the types sizes are as expected\
       for example in my machine type `long` is `8` byte but the standard says that its `4` byte
 * [ ] a visual representation for the phone index
+* [ ] check if the user picture is all null or not
+      if it is get random bytes again

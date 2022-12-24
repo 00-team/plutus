@@ -12,8 +12,7 @@ CFLAGS   =  -std=c99 -pedantic -Wall -Wno-deprecated-declarations -Wextra -Werro
 			-Os -DVERSION=\"$(VERSION)\" $(INCS)
 
 
-FILES = plutus setup utils \
-		server/server \
+FILES = plutus utils server/server \
 		user/user user/phone
 
 HEADER = plutus user/user user/phone server/api
@@ -41,10 +40,10 @@ clear:
 dev: clear plutus
 	./plutus
 
-test: clear
+run: clear
 	python scripts/client.py
 
 
-.PHONY: dirs dev test clear
-.SILENT: dirs dev test clear plutus
+.PHONY: dirs dev run clear
+.SILENT: dirs dev run clear plutus
 .DEFAULT: plutus

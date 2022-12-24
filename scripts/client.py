@@ -3,11 +3,20 @@ import socket
 import struct
 from binascii import b2a_hex
 from enum import Enum, auto
-from hashlib import sha3_512
+from hashlib import sha3_224, sha3_512
 from pathlib import Path
+from struct import Struct
 
 sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
 BYTE_ORDER = 'little'
+DELETED_FLAG = ord('D')
+
+# cc - phone - flag - ext - pic - token - nickname
+USER_STRUCT = Struct('<H12sBB4s64s50s')
+# user_id - user - created: u char - 1 pad
+LOGIN_RESPONSE = Struct(f'<Q{USER_STRUCT.size}sBx')
+# cc: u short - char[12] - char[64]
+LOGIN_ARGS = Struct(f'<H12s64s')
 
 
 def bin2str(data: bytes) -> str:
@@ -29,32 +38,50 @@ class RQT(Enum):
         return (0 + count).to_bytes(2, BYTE_ORDER)
 
     USER_GET = auto()
-    USER_DEL = auto()
     USER_COUNT = auto()
     USER_LOGIN = auto()
     USER_UPDATE = auto()
 
+    def __add__(self, other):
+        return self.value + other
+
+
+EXT = {
+    0: None,
+
+    1: 'png',
+    2: 'jpg',
+    3: 'gif',
+
+    'png': 1,
+    'jpg': 2,
+    'gif': 3,
+}
+
 
 class User:
     user_id: int
-    nickname: str
-    picture: str
-    token: bytes
     phone: tuple[int, str]
+    nickname: str | None
+    picture: str | None
 
-    def __init__(self, user_id, phone, token, nickname, picture) -> None:
-        self.user_id = user_id
-        self.user_id_b = user_id.to_bytes(8, BYTE_ORDER)
-        self.phone = phone
-        self.token = token
-        self.nickname = nickname
-        self.picture = picture
+    __user_id: bytes
+    __cc: int
+    __phone: bytes
+    __flag: int
+    __ext: int
+    __picture: bytes
+    __token: bytes
+    __nickname: bytes
+
+    def __init__(self, user_id: int, data: bytes) -> None:
+        self._updateattr_(user_id, data)
 
     @classmethod
     def count(cls, exact=False) -> int:
         # get user count
         # by default user count is based on files size
-        request = RQT.USER_COUNT.value + exact.to_bytes(1, BYTE_ORDER)
+        request = RQT.USER_COUNT + exact.to_bytes(1, BYTE_ORDER)
 
         sock.send(request)
         response = sock.recv(8)
@@ -62,21 +89,20 @@ class User:
         return int.from_bytes(response, BYTE_ORDER)
 
     @classmethod
-    def login(cls, cc: int, phone: str, token: bytes):
+    def login(cls, cc: int, phone: str, token: bytes) -> tuple['User', bool]:
         # provide a phone number and a token
         # if user the exists update the token and return it
         # if not return a new created user
-        request = RQT.USER_LOGIN.value + cc.to_bytes(2, BYTE_ORDER)
-        request += phone.encode() + token
-        print(len(request))
-
-        print(request.hex('-'))
-
+        request = RQT.USER_LOGIN + LOGIN_ARGS.pack(cc, phone.encode(), token)
         sock.send(request)
-        sock.recv(135)
+
+        response = sock.recv(LOGIN_RESPONSE.size)
+        user_id, user_data, created = LOGIN_RESPONSE.unpack(response)
+
+        return cls(user_id, user_data), bool(created)
 
     @classmethod
-    def get(cls, user_id: int, input_token: bytes = None):
+    def get(cls, user_id: int, input_token: bytes = None) -> 'User':
         # get a user via user_id
         # if token was provided, check the token as well
 
@@ -85,38 +111,93 @@ class User:
 
         user_id_b = user_id.to_bytes(8, BYTE_ORDER)
 
-        sock.send(RQT.USER_GET.value + user_id_b)
-        response = sock.recv(135)
+        sock.send(RQT.USER_GET + user_id_b)
+        response = sock.recv(1 + USER_STRUCT.size)
 
         if response[0] == 4:
-            raise UserNotFound(user_id=user_id)
+            return None
 
-        # cc, phone, flag, ext, picture, token, nickname
-        user_struct = struct.unpack('H12sBB4s64s50s', response[1:])
+        user = cls(user_id, response[1:])
 
-        return cls(
-            user_id,
-            phone=(user_struct[0], bin2str(user_struct[1])),
-            token=user_struct[5],
-            nickname=bin2str(user_struct[6]),
-            picture=(user_id_b + user_struct[4]).hex() + '.png',
+        if (not input_token is None) and input_token != user.token:
+            return None
+
+        return user
+
+    def _updateattr_(self, user_id: int, data: bytes):
+        cc, phone, flag, ext, picture, token, nick = USER_STRUCT.unpack(data)
+
+        if user_id:
+            self.__user_id = user_id.to_bytes(8, BYTE_ORDER)
+            self.user_id = user_id
+
+        self.__cc = cc
+        self.__phone = phone
+        self.__flag = flag
+        self.__ext = ext
+        self.__picture = picture
+        self.__token = token
+        self.__nickname = nick
+
+        self.phone = (cc, bin2str(phone))
+        self.nickname = bin2str(nick) or None
+        self.picture = None
+
+        pic_ext = EXT.get(ext, None)
+        if not pic_ext is None:
+            pic_name = sha3_224(self.__user_id + picture).hexdigest()
+            self.picture = f'{pic_name}.{pic_ext}'
+
+    def _pars_update_args_(self, kwargs: dict) -> bytes:
+        if not kwargs:
+            raise ValueError('no argument was send to update!')
+
+        cc = self.__cc
+        phone = self.__phone
+        flag = self.__flag
+        ext = self.__ext
+        picture = self.__picture
+        token = self.__token
+        nickname = self.__nickname
+
+        if self.__flag == DELETED_FLAG:
+            return None
+
+        if kwargs.get('delete', False):
+            flag = DELETED_FLAG
+            print(flag)
+            print(type(flag))
+            print(self.__flag)
+            print(type(self.__flag))
+            return USER_STRUCT.pack(
+                cc, phone, flag, ext,
+                picture, token, nickname,
+            )
+
+        if 'nickname' in kwargs:
+            nick = kwargs.get('nickname')
+            if nick is None:
+                nickname = b'\x00'
+            else:
+                nickname = str(nick).encode()
+
+        return USER_STRUCT.pack(
+            cc, phone, flag, ext,
+            picture, token, nickname,
         )
 
-    def update(self):
-        pass
+    def update(self, **kwargs) -> bool:
+        user = self._pars_update_args_(kwargs)
+        if user is None:
+            return False
 
-    def delete(self):
+        request = RQT.USER_UPDATE + self.__user_id + user
 
-        if self.user_id == -1:
-            raise UserNotFound(user_id=-1)
+        sock.send(request)
+        status = sock.recv(1)
 
-        sock.send(RQT.USER_DEL.value + self.user_id_b)
-        response = sock.recv(1)
-
-        if response == b'\x04':
-            raise UserNotFound(user_id=self.user_id)
-
-        self.user_id = -1
+        if status == b'\x00':
+            self._updateattr_(0, user)
 
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}: {self.user_id}>'
@@ -138,20 +219,14 @@ def connect():
 
 def main():
     connect()
-    # try:
-    #     user = User.get(8)
-    #     user.delete()
-    #     user.delete()
-    #     # User.get(13)
-    # except UserNotFound as e:
-    #     print('User %d Not Found' % e.user_id)
+    sock.send(b'')
+    return
 
-    randomtoken = sha3_512(b'gg token ez')
-    print(randomtoken.hexdigest())
+    user, _ = User.login(98, '09137775543', sha3_512(b'gg token ez').digest())
+    user.update(nickname='12GG', delete=1)
+    print(user.user_id)
+    print(user.nickname)
 
-    User.login(98, '091244444444', randomtoken.digest())
-    print('count: ', User.count())
-    print('count exact: ', User.count(True))
     sock.close()
 
 

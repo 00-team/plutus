@@ -30,7 +30,7 @@ void user_print(User *user, user_id_t id) {
     } else {
         printf("----------------------\n");
     }
-    printf("id: %ld\nphone: +%d %s\n", id, user->cc, user->phone);
+    printf("id: %lld\nphone: +%d %s\n", id, user->cc, user->phone);
     printf("token: ");
 
     for (int i = 0; i < SHA512_DIGEST_LENGTH; i++)
@@ -38,7 +38,7 @@ void user_print(User *user, user_id_t id) {
 
     printf("\nnickname: %s\npicture: ", user->nickname);
 
-    for (int i = 0; i < USER_PICTURE_SIZE; i++)
+    for (size_t i = 0; i < sizeof(user->picture); i++)
         printf("%02x", user->picture[i]);
 
     printf("\n----------------------\n");
@@ -53,7 +53,7 @@ void user_set(User *user) {
     memcpy(user->token, hash, SHA512_DIGEST_LENGTH);
     memcpy(user->nickname, "xGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZx",
            50);
-    getrandom(user->picture, USER_PICTURE_SIZE, GRND_NONBLOCK);
+    getrandom(user->picture, sizeof(user->picture), GRND_NONBLOCK);
 }
 
 void write_n_users(user_id_t N) {
@@ -68,8 +68,10 @@ void write_n_users(user_id_t N) {
     fclose(udb);
     fclose(fopen(USER_DB_FILENAME, "wb"));
     udb = fopen(USER_DB_FILENAME, "r+b");
-    if (udb == NULL)
-        die("error opening the (%s)!", USER_DB_FILENAME);
+    if (udb == NULL) {
+        printf("error opening the (%s)!", USER_DB_FILENAME);
+        return;
+    }
 
     // write N users
     for (; i <= N; i++) {
@@ -111,15 +113,8 @@ void append_empty_user_id(user_id_t user_id) {
 }
 
 // convert user_id to User
-char check_user_id(char *buffer, user_id_t *user_id, User *user) {
-    *user_id = *(user_id_t *)buffer;
-    long pos = sizeof(User) * (*user_id - 1);
-
-    /*
-       response[0] is type of the response
-       value 4 for means "user not found / out of range / deleted"
-       and any other value means "success"
-    */
+char check_user_id(user_id_t user_id, User *user) {
+    long pos = sizeof(User) * (user_id - 1);
 
     if (pos < 0 || pos >= fsize(udb))
         return -1;
@@ -135,16 +130,16 @@ char check_user_id(char *buffer, user_id_t *user_id, User *user) {
 }
 
 // user get api
-void user_get(char *request, char *response) {
+void user_get(Request request, Response response) {
     User user;
-    user_id_t user_id = 0;
+    user_id_t user_id = *(user_id_t *)request;;
 
     /*
        response[0] is type of the response
        value 4 for means "user not found / out of range / deleted"
        and any other value means "success"
     */
-    if (check_user_id(request, &user_id, &user) == -1) {
+    if (check_user_id(user_id, &user) == -1) {
         response[0] = 4;
         return;
     }
@@ -154,16 +149,17 @@ void user_get(char *request, char *response) {
     memcpy(response, &user, sizeof(User));
 }
 
+/* 
 // user delete api
-void user_delete(char *request, char *response) {
+void user_delete(Request request, Response response) {
     User user;
     user_id_t user_id = 0;
 
-    /*
+    /
        response[0] is type of the response
        value 4 for means "user not found / out of range / deleted"
        and any other value means "success"
-    */
+    /
     if (check_user_id(request, &user_id, &user) == -1) {
         response[0] = 4;
         return;
@@ -177,9 +173,10 @@ void user_delete(char *request, char *response) {
 
     response[0] = 0;
 }
+*/
 
 // user count api
-void user_count(char *request, char *response) {
+void user_count(Request request, Response response) {
     bool exact = *(bool *)request;
     user_id_t count;
 
@@ -192,25 +189,90 @@ void user_count(char *request, char *response) {
     memcpy(response, &count, sizeof(user_id_t));
 }
 
-void user_login(char *request, char *response) {
-    // request
-    // cc 2 bytes - phone 12 bytes - token 64 bytes
-    // response
-    // 1 byte: created - User
+void user_login(Request request, Response res) {
+    User user;
+    UserLoginArgs *args = (UserLoginArgs *)request;
+    UserLoginResponse *response = (UserLoginResponse *)res;
 
-    unsigned short cc = *(unsigned short *)request;
-    char *phone = &request[2];
-    // char *token = &request[14];
+    // ignore the first 2 digits of the phone number which is 09
+    Phone phone = phone_convert(args->phone);
+    user_id_t user_id = phone_search(&phone);
 
+    if (user_id == 0) {
+        // user_add
 
-    printf("cc: %d\n", cc);
-    printf("phone: ");
+        memset(&user, 0, sizeof(User));
 
-    for (int i = 0; i < 12; i++) {
-        printf("%c", phone[i]);
+        user.cc = args->cc;
+        memcpy(user.phone, args->phone, sizeof(user.phone));
+        memcpy(user.token, args->token, sizeof(user.token));
+
+        getrandom(user.picture, sizeof(user.picture), GRND_NONBLOCK);
+
+        // go to the end of database for appending a user
+        // and get the user id
+        user_id = (fsize(udb) / sizeof(User)) + 1;
+
+        fwrite(&user, sizeof(User), 1, udb);
+        users_counts++;
+
+        if (phone_update(&phone, user_id)) {
+            printf("Error user exists ...\n");
+        }
+
+        // created
+        memset(&response->created, 1, 1);
+    } else {
+        memset(&response->created, 0, 1);
+
+        user_id_t pos = (user_id - 1) * sizeof(User);
+
+        fseek(udb, pos, SEEK_SET);
+        fread(&user, sizeof(User), 1, udb);
+
+        // update the token
+        memcpy(user.token, args->token, sizeof(user.token));
+
+        fseek(udb, pos, SEEK_SET);
+        fwrite(&user, sizeof(User), 1, udb);
     }
 
-    printf("\nrs: %s\n", response);
+    
+    memcpy(&response->user_id, &user_id, sizeof(user_id_t));
+    memcpy(&response->user, &user, sizeof(User));
+}
+
+void user_update(Request request, Response response) {
+    User user;
+    UserUpdateArgs *args = (UserUpdateArgs *)request;
+
+    if (check_user_id(args->user_id, &user) == -1) {
+        response[0] = 4;
+        return;
+    }
+
+    if (args->user.flag == DELETED_FLAG) {
+        user.flag = DELETED_FLAG;
+        if (fwrite(&user, sizeof(User), 1, udb) != 1) {
+            // somthing went worng
+            response[0] = 1;
+            return;
+        }
+
+        users_counts--;
+        append_empty_user_id(args->user_id);
+
+        response[0] = 0;
+        return;
+    }
+
+    if (fwrite(&args->user, sizeof(User), 1, udb) != 1) {
+        // somthing went worng
+        response[0] = 1;
+        return;
+    }
+
+    response[0] = 0;
 }
 
 void user_setup(void) {

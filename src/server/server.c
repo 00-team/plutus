@@ -11,17 +11,25 @@
 #include <sys/types.h>
 
 #include "../plutus.h"
-#include "api.h"
+#include "../user/user.h"
+
 
 #define SOCK_PATH "/tmp/plutus.server.sock"
+
+static const API apis[] = {
+    [RQT_USER_GET] = { user_get, 1 + sizeof(User) },
+    [RQT_USER_COUNT] = { user_count, sizeof(user_id_t) },
+    [RQT_USER_LOGIN] = { user_login, sizeof(UserLoginResponse) },
+    [RQT_USER_UPDATE] = { user_update, 1 },
+};
 
 
 void server_run(void) {
     printf("------------ SERVER RUNNING ------------\n");
 
     ssize_t rq_length = 0;
-    Request buffer = malloc(MAX_REQUEST_SIZE);
-    char response[MAX_RESPONSE_SIZE];
+    RequestData request;
+    Response response;
 
     struct sockaddr_un server_addr, client_addr;
     socklen_t addr_len = sizeof(client_addr);
@@ -44,7 +52,7 @@ void server_run(void) {
 
     while (1) {
         rq_length = recvfrom(
-            sockfd, buffer, MAX_REQUEST_SIZE, 0,
+            sockfd, &request, sizeof(request), 0,
             (struct sockaddr *)&client_addr, &addr_len
         );
 
@@ -53,16 +61,15 @@ void server_run(void) {
             break;
         }
 
-        unsigned short RQT = *(unsigned short *)buffer;
+        // debug
+        if (rq_length == 0) break;
 
         // invalid request
-        if (rq_length < MIN_REQUEST_SIZE || RQT >= RQT_LENGTH)
+        if (rq_length < MIN_REQUEST_SIZE || request.type >= RQT_LENGTH)
             continue;
         
-        printf("rq_length: %ld\n", rq_length);
-        
-        API api = apis[RQT];
-        api.func(&buffer[2], response);
+        API api = apis[request.type];
+        api.func(request.data, response);
 
         if (sendto(
             sockfd, response, api.rs_size, 0,
@@ -72,25 +79,6 @@ void server_run(void) {
         }
     }
 
-    free(buffer);
     close(sockfd);
     unlink(SOCK_PATH);
 }
-
-/*
-
-request
-
------ 2 byte id -----
-0 get_user_get
-1 get_user_post
-2 get_user_put
-....
-20 get_eatery
-...
------
-
-response
-
-
-*/

@@ -10,28 +10,6 @@
 
 
 FILE *phdb = NULL;
-FILE *pidb = NULL;
-
-size_t root[CACHE_SIZ];
-
-
-void print_root(void) {
-    printf("-------------------------ROOT-------------------------\n");
-
-    printf("     ");
-    for (int i = 0; i < NODE_ABC; i++)
-        printf("%d        ", i);
-
-    printf("\n  0. ");
-
-    for (int i = 0; i < CACHE_SIZ; i++) {
-        if (i % 10 == 0 && i != 0)
-            printf("\n%3d. ", i / 10);
-        printf("%-8ld ", root[i]);
-    }
-
-    printf("\n------------------------------------------------------\n");
-}
 
 void print_node(Node node) {
     for (link_t i = 0; i < NODE_ABC; i++) {
@@ -46,6 +24,10 @@ void print_node(Node node) {
 // to root index and links
 Phone phone_convert(char *phone_number) {
     Phone phone;
+
+    // seek the fist 2 digits 09xx
+    phone_number++;
+    phone_number++;
 
     char cache_index[CACHE_LVL];
     strncpy(cache_index, phone_number, CACHE_LVL);
@@ -62,7 +44,7 @@ Phone phone_convert(char *phone_number) {
 // add the node or update it
 // return true if exists
 bool phone_update(Phone *phone, user_id_t value) {
-    size_t pos = root[phone->index];
+    size_t pos = phone->index * sizeof(Node);
     Node node;
     link_t link = 0;
 
@@ -81,7 +63,10 @@ bool phone_update(Phone *phone, user_id_t value) {
             fseek(phdb, pos, SEEK_SET);
 
             // set the next imaginary node position to the current one
-            node[link] = end_of_file;
+            if (i == LINKS_LEN - 1)
+                node[link] = value;
+            else
+                node[link] = end_of_file;
 
             // write the updated node
             fwrite(node, sizeof(Node), 1, phdb);
@@ -135,7 +120,7 @@ bool phone_update(Phone *phone, user_id_t value) {
 
 // search for a node
 user_id_t phone_search(Phone *phone) {
-    size_t pos = root[phone->index];
+    size_t pos = phone->index * sizeof(Node);
     Node node;
 
     for (link_t i = 0; i < LINKS_LEN; i++) {
@@ -152,36 +137,29 @@ user_id_t phone_search(Phone *phone) {
 
 
 void phone_setup(void) {
-    long pidb_size = fsize(pidb);
     long phdb_size = fsize(phdb);
 
     fseek(phdb, 0, SEEK_SET);
-    fseek(pidb, 0, SEEK_SET);
 
-    if (pidb_size < 0 || phdb_size < 0) {
-        die("Error getting phone database size");
+    if (phdb_size < 0) {
+        printf("Error getting phone database size");
         return;
     }
 
-    if (pidb_size == 0 && phdb_size == 0) {
+    if (phdb_size == 0) {
         Node temp;
         memset(temp, 0, sizeof(Node));
 
         for (size_t i = 0; i < CACHE_SIZ; i++) {
-            root[i] = i * sizeof(Node);
-            fwrite(&root[i], sizeof(size_t), 1, pidb);
             fwrite(temp, sizeof(Node), 1, phdb);
         }
 
+        fflush(phdb);
         return;
     }
 
-    if (pidb_size == sizeof(size_t) * CACHE_SIZ &&
-        (size_t)phdb_size >= sizeof(Node) * CACHE_SIZ) {
-        fread(root, sizeof(size_t), CACHE_SIZ, pidb);
-        return;
+    if ((size_t)phdb_size < sizeof(Node) * CACHE_SIZ) {
+        printf("ERROR loading the phone database!");
     }
-
-    die("error loading the phone cache!");
 }
 

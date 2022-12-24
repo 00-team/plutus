@@ -1,4 +1,7 @@
 
+#ifndef USER_PHONE_H
+#define USER_PHONE_H
+
 #include <stddef.h>
 #include <stdbool.h>
 #include "user.h"
@@ -37,3 +40,5 @@ typedef struct {
 Phone phone_convert(char *phone_number);
 bool phone_update(Phone *phone, user_id_t value);
 user_id_t phone_search(Phone *phone);
+
+#endif // USER_PHONE_H

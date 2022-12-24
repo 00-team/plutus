@@ -1,39 +1,48 @@
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
 
 #include "plutus.h"
 
 
-char *argv0;
+FILE *file_open(char *filename);
 
-static void verr(const char *fmt, va_list ap) {
-    if (argv0 && strncmp(fmt, "usage", sizeof("usage") - 1)) {
-        fprintf(stderr, "%s: ", argv0);
-    }
 
-    vfprintf(stderr, fmt, ap);
+extern FILE *udb;
+extern FILE *phdb;
 
-    if (fmt[0] && fmt[strlen(fmt) - 1] == ':') {
-        fputc(' ', stderr);
-        perror(NULL);
-    } else {
-        fputc('\n', stderr);
-    }
+void setup_files(void) {
+    udb  = file_open(USER_DB_FILENAME);
+    phdb = file_open(PHONE_DB_FILENAME);
 }
 
-void die(const char *message, ...) {
-    va_list ap;
-
-    va_start(ap, message);
-    verr(message, ap);
-    va_end(ap);
-
-    exit(1);
+void clean_up_files(void) {
+    if (udb  != NULL) fclose(udb);
+    if (phdb != NULL) fclose(phdb);
 }
 
+FILE *file_open(char *filename) {
+    FILE *f;
+
+    f = fopen(filename, "ab+");
+
+    if (f == NULL) {
+        printf("error while opening (%s) with ab+ flag", filename);
+        return NULL;
+    }
+
+    if (fclose(f) != 0) {
+        printf("error while closing (%s) with ab+ flag", filename);
+        return NULL;
+    }
+
+    f = fopen(filename, "rb+");
+    if (f == NULL) {
+        printf("error while opening (%s) with rb+ flag", filename);
+        return NULL;
+    }
+
+    return f;
+}
 
 long fsize(FILE *f) {
     fseek(f, 0, SEEK_END);
