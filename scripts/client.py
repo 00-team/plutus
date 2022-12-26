@@ -56,6 +56,8 @@ EXT = {
     'png': 1,
     'jpg': 2,
     'gif': 3,
+
+    None: 0
 }
 
 
@@ -143,14 +145,16 @@ class User:
         self.nickname = bin2str(nick) or None
         self.picture = None
 
-        pic_ext = EXT.get(ext, None)
+        pic_ext = EXT.get(ext)
         if not pic_ext is None:
             pic_name = sha3_224(self.__user_id + picture).hexdigest()
             self.picture = f'{pic_name}.{pic_ext}'
 
     def _pars_update_args_(self, kwargs: dict) -> bytes:
         if not kwargs:
-            raise ValueError('no argument was send to update!')
+            return
+
+        change = False
 
         cc = self.__cc
         phone = self.__phone
@@ -161,14 +165,10 @@ class User:
         nickname = self.__nickname
 
         if self.__flag == DELETED_FLAG:
-            return None
+            return
 
         if kwargs.get('delete', False):
             flag = DELETED_FLAG
-            print(flag)
-            print(type(flag))
-            print(self.__flag)
-            print(type(self.__flag))
             return USER_STRUCT.pack(
                 cc, phone, flag, ext,
                 picture, token, nickname,
@@ -176,15 +176,25 @@ class User:
 
         if 'nickname' in kwargs:
             nick = kwargs.get('nickname')
-            if nick is None:
-                nickname = b'\x00'
-            else:
-                nickname = str(nick).encode()
+            if nick != self.nickname:
+                change = True
+                if nick is None:
+                    nickname = b'\x00'
+                else:
+                    nickname = str(nick).encode()
 
-        return USER_STRUCT.pack(
-            cc, phone, flag, ext,
-            picture, token, nickname,
-        )
+        if 'picture' in kwargs:
+            pic_ext = kwargs.get('picture')
+            if pic_ext in ['png', 'jpg', 'gif', None]:
+                ext = EXT[pic_ext]
+                if ext != self.__ext:
+                    change = True
+
+        if change:
+            return USER_STRUCT.pack(
+                cc, phone, flag, ext,
+                picture, token, nickname,
+            )
 
     def update(self, **kwargs) -> bool:
         user = self._pars_update_args_(kwargs)
@@ -198,6 +208,9 @@ class User:
 
         if status == b'\x00':
             self._updateattr_(0, user)
+            return True
+
+        return False
 
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}: {self.user_id}>'
@@ -219,13 +232,19 @@ def connect():
 
 def main():
     connect()
-    sock.send(b'')
-    return
+    # sock.send(b'')
+    # return
 
-    user, _ = User.login(98, '09137775543', sha3_512(b'gg token ez').digest())
-    user.update(nickname='12GG', delete=1)
-    print(user.user_id)
-    print(user.nickname)
+    user, c = User.login(98, '09111111111', sha3_512(b'gg token ez').digest())
+    print(user.picture)
+
+    # user, c = User.login(98, '09111111111', sha3_512(b'gg token ez').digest())
+
+    # user.update(nickname='12GG')
+    # user.update(picture='png')
+    # print(user.user_id)
+    # print(user.nickname)
+    # sock.send(b'')
 
     sock.close()
 
