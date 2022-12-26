@@ -103,12 +103,21 @@ user_id_t get_empty_user_id(void) {
 }
 
 void append_empty_user_id(user_id_t user_id) {
-    for (user_id_t i = 0; i < USER_EMPTY_SIZE; i++) {
-        if (empty_ids[i] == 0) {
-            empty_ids[i] = user_id;
-            empty_ids_count++;
-            break;
+    int empty_idx = -1;
+
+    for (int i = 0; i < USER_EMPTY_SIZE; i++) {
+        if (empty_ids[i] == user_id) {
+            // if alreadey exists return
+            return;
         }
+
+        if (empty_ids[i] == 0 && empty_idx == -1)
+            empty_idx = i;
+    }
+
+    if (empty_idx != -1) {
+        empty_ids[empty_idx] = user_id;
+        empty_ids_count++;
     }
 }
 
@@ -129,6 +138,27 @@ char check_user_id(user_id_t user_id, User *user) {
     return 0;
 }
 
+// add a new user
+user_id_t user_add(User *user) {
+    user_id_t user_id = get_empty_user_id();
+    Phone phone = phone_convert(user->phone);;
+
+    getrandom(user->picture, sizeof(user->picture), GRND_NONBLOCK);
+
+    if (user_id == 0)
+        user_id = (fsize(udb) / sizeof(User)) + 1;
+    else
+        fseek(udb, (user_id - 1) * sizeof(User), SEEK_SET);
+
+    if (fwrite(user, sizeof(User), 1, udb) != 1)
+        return 0;
+
+    phone_update(&phone, user_id);
+    users_counts++;
+    return user_id;
+}
+
+
 // user get api
 void user_get(Request request, Response response) {
     User user;
@@ -148,32 +178,6 @@ void user_get(Request request, Response response) {
     response++;
     memcpy(response, &user, sizeof(User));
 }
-
-/* 
-// user delete api
-void user_delete(Request request, Response response) {
-    User user;
-    user_id_t user_id = 0;
-
-    /
-       response[0] is type of the response
-       value 4 for means "user not found / out of range / deleted"
-       and any other value means "success"
-    /
-    if (check_user_id(request, &user_id, &user) == -1) {
-        response[0] = 4;
-        return;
-    }
-
-    user.flag = DELETED_FLAG;
-    fwrite(&user, sizeof(User), 1, udb);
-
-    users_counts--;
-    append_empty_user_id(user_id);
-
-    response[0] = 0;
-}
-*/
 
 // user count api
 void user_count(Request request, Response response) {
@@ -198,46 +202,26 @@ void user_login(Request request, Response res) {
     Phone phone = phone_convert(args->phone);
     user_id_t user_id = phone_search(&phone);
 
-    if (user_id == 0) {
-        // user_add
-
-        memset(&user, 0, sizeof(User));
-
-        user.cc = args->cc;
-        memcpy(user.phone, args->phone, sizeof(user.phone));
-        memcpy(user.token, args->token, sizeof(user.token));
-
-        getrandom(user.picture, sizeof(user.picture), GRND_NONBLOCK);
-
-        // go to the end of database for appending a user
-        // and get the user id
-        user_id = (fsize(udb) / sizeof(User)) + 1;
-
-        fwrite(&user, sizeof(User), 1, udb);
-        users_counts++;
-
-        if (phone_update(&phone, user_id)) {
-            printf("Error user exists ...\n");
-        }
-
-        // created
+    if (user_id == 0 || check_user_id(user_id, &user) == -1) {
         memset(&response->created, 1, 1);
+
+        // clear the user
+        memset(&user, 0, sizeof(User));
+        // set the token, phone and cc of the new user
+        memcpy(user.token, args->token, sizeof(user.token));
+        memcpy(user.phone, args->phone, sizeof(user.phone));
+        user.cc = args->cc;
+
+        // add it
+        user_id = user_add(&user);
     } else {
         memset(&response->created, 0, 1);
 
-        user_id_t pos = (user_id - 1) * sizeof(User);
-
-        fseek(udb, pos, SEEK_SET);
-        fread(&user, sizeof(User), 1, udb);
-
-        // update the token
+        // update the user token
         memcpy(user.token, args->token, sizeof(user.token));
-
-        fseek(udb, pos, SEEK_SET);
         fwrite(&user, sizeof(User), 1, udb);
     }
 
-    
     memcpy(&response->user_id, &user_id, sizeof(user_id_t));
     memcpy(&response->user, &user, sizeof(User));
 }
@@ -258,6 +242,10 @@ void user_update(Request request, Response response) {
             response[0] = 1;
             return;
         }
+
+        // delete the index
+        Phone phone = phone_convert(user.phone);
+        phone_update(&phone, 0);
 
         users_counts--;
         append_empty_user_id(args->user_id);
