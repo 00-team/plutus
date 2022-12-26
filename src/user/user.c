@@ -198,7 +198,6 @@ void user_login(Request request, Response res) {
     UserLoginArgs *args = (UserLoginArgs *)request;
     UserLoginResponse *response = (UserLoginResponse *)res;
 
-    // ignore the first 2 digits of the phone number which is 09
     Phone phone = phone_convert(args->phone);
     user_id_t user_id = phone_search(&phone);
 

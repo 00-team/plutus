@@ -19,6 +19,16 @@ void print_node(Node node) {
     printf("\n");
 }
 
+void print_phone(Phone *phone) {
+    printf("------- PHONE -------\n");
+    printf("index: %ld\nlinks: ", phone->index);
+    for (link_t i = 0; i < LINKS_LEN; i++) {
+        // if (i != 0) printf("|");
+        printf("%d", phone->links[i]);
+    }
+    printf("\n---------------------\n");
+}
+
 
 // convert a phone number string
 // to root index and links
