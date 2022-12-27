@@ -4,14 +4,8 @@
 
 #define USER_DB_FILENAME  "data/user.bin"
 #define PHONE_DB_FILENAME "data/phone.bin"
+#define ADMIN_DB_FILENAME "data/admin.bin"
 
-
-
-// enum {
-//     EXT_JPG,
-//     EXT_PNG,
-//     EXT_GIF,
-// };
 
 // utils
 void setup_files(void);

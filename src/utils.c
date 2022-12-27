@@ -9,15 +9,18 @@ FILE *file_open(char *filename);
 
 extern FILE *udb;
 extern FILE *phdb;
+extern FILE *adb;
 
 void setup_files(void) {
     udb  = file_open(USER_DB_FILENAME);
     phdb = file_open(PHONE_DB_FILENAME);
+    adb  = file_open(ADMIN_DB_FILENAME);
 }
 
 void clean_up_files(void) {
     if (udb  != NULL) fclose(udb);
     if (phdb != NULL) fclose(phdb);
+    if (adb  != NULL) fclose(adb);
 }
 
 FILE *file_open(char *filename) {

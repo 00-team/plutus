@@ -30,16 +30,29 @@ typedef struct {
     user_id_t user_id;
     User user;
     unsigned char created;
-} UserLoginResponse;
+} UserLoginBody;
 
 typedef struct {
     user_id_t user_id;
     User user;
 } UserUpdateArgs;
 
-_Static_assert(offsetof(UserLoginResponse, user_id) == 0, "offset of LoginResponse->user_id is invalid");
-_Static_assert(offsetof(UserLoginResponse, created) == 142, "offset of LoginResponse->created is invalid");
-_Static_assert(sizeof(UserLoginResponse) == 144, "UserLoginResponse size is invalid");
+
+#include "../server/api.h"
+
+void user_get(RequestData request, Response *response);
+void user_count(RequestData request, Response *response);
+void user_login(RequestData request, Response *response);
+void user_update(RequestData request, Response *response);
+
+
+
+
+
+// static asserts
+_Static_assert(offsetof(UserLoginBody, user_id) == 0, "offset of LoginResponse->user_id is invalid");
+_Static_assert(offsetof(UserLoginBody, created) == 142, "offset of LoginResponse->created is invalid");
+_Static_assert(sizeof(UserLoginBody) == 144, "UserLoginBody size is invalid");
 
 _Static_assert(sizeof(User) == 134, "User size is invalid");
 _Static_assert(sizeof(user_id_t) == 8, "UserID size is invalid");
@@ -48,11 +61,6 @@ _Static_assert(sizeof(UserUpdateArgs) == 144, "UserUpdateArgs size is invalid");
 _Static_assert(offsetof(UserUpdateArgs, user) == 8, "offset of UserUpdateArgs->user is invalid");
 
 
-#include "../server/api.h"
 
-void user_get(Request request, Response response);
-void user_count(Request request, Response response);
-void user_login(Request request, Response response);
-void user_update(Request request, Response response);
 
 #endif // USER_USER_H

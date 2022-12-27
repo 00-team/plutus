@@ -2,11 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-
 #include <string.h>
-
 #include <sys/random.h>
-#include <openssl/sha.h>
 
 #include "../plutus.h"
 #include "phone.h"
@@ -19,11 +16,6 @@ static user_id_t empty_ids[USER_EMPTY_SIZE];
 static user_id_t empty_ids_count = 0;
 
 
-// temp variables
-unsigned char hash[SHA512_DIGEST_LENGTH];
-unsigned char data[] = "A_TOKNE";
-
-
 void user_print(User *user, user_id_t id) {
     if (user->flag == DELETED_FLAG) {
         printf("--------DELETED-------\n");
@@ -33,7 +25,7 @@ void user_print(User *user, user_id_t id) {
     printf("id: %lld\nphone: +%d %s\n", id, user->cc, user->phone);
     printf("token: ");
 
-    for (int i = 0; i < SHA512_DIGEST_LENGTH; i++)
+    for (size_t i = 0; i < sizeof(user->token); i++)
         printf("%02x", user->token[i]);
 
     printf("\nnickname: %s\npicture: ", user->nickname);
@@ -43,43 +35,6 @@ void user_print(User *user, user_id_t id) {
 
     printf("\n----------------------\n");
 }
-
-void user_set(User *user) {
-    user->ext = 0;
-    user->cc = 98;
-    user->flag = 0;
-
-    memcpy(user->phone, "09223334444", 12);
-    memcpy(user->token, hash, SHA512_DIGEST_LENGTH);
-    memcpy(user->nickname, "xGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZGGEZx",
-           50);
-    getrandom(user->picture, sizeof(user->picture), GRND_NONBLOCK);
-}
-
-void write_n_users(user_id_t N) {
-    // set the hash
-    SHA512(data, strlen((char *)data), hash);
-
-    user_id_t i = 1;
-    User user;
-
-    // rewrite the current database
-    // basicly clear it out
-    fclose(udb);
-    fclose(fopen(USER_DB_FILENAME, "wb"));
-    udb = fopen(USER_DB_FILENAME, "r+b");
-    if (udb == NULL) {
-        printf("error opening the (%s)!", USER_DB_FILENAME);
-        return;
-    }
-
-    // write N users
-    for (; i <= N; i++) {
-        user_set(&user);
-        fwrite(&user, sizeof(User), 1, udb);
-    }
-}
-
 
 
 // empty user ids
@@ -160,49 +115,54 @@ user_id_t user_add(User *user) {
 
 
 // user get api
-void user_get(Request request, Response response) {
+void user_get(RequestData request, Response *response) {
+    // request args:
+    // 8 byte user_id
     User user;
-    user_id_t user_id = *(user_id_t *)request;;
+    user_id_t user_id = *(user_id_t *)request;
 
-    /*
-       response[0] is type of the response
-       value 4 for means "user not found / out of range / deleted"
-       and any other value means "success"
-    */
     if (check_user_id(user_id, &user) == -1) {
-        response[0] = 4;
+        response->md.status = 401;
+        response->md.size = 0;
         return;
     }
 
-    response[0] = 0;
-    response++;
-    memcpy(response, &user, sizeof(User));
+    response->md.status = 200;
+    response->md.size = sizeof(User);
+    memcpy(response->body, &user, sizeof(User));
 }
 
 // user count api
-void user_count(Request request, Response response) {
+void user_count(RequestData request, Response *response) {
+    // args: 1 byte bool exact
     bool exact = *(bool *)request;
     user_id_t count;
 
+    response->md.status = 200;
+    response->md.size = sizeof(user_id_t);
+
     if (exact) {
-        memcpy(response, &users_counts, sizeof(user_id_t));
+        memcpy(response->body, &users_counts, sizeof(user_id_t));
         return;
     }
 
     count = fsize(udb) / sizeof(User);
-    memcpy(response, &count, sizeof(user_id_t));
+    memcpy(response->body, &count, sizeof(user_id_t));
 }
 
-void user_login(Request request, Response res) {
+void user_login(RequestData request, Response *response) {
     User user;
     UserLoginArgs *args = (UserLoginArgs *)request;
-    UserLoginResponse *response = (UserLoginResponse *)res;
+    UserLoginBody *body = (UserLoginBody *)response->body;
+
+    response->md.size = sizeof(UserLoginBody);
+    response->md.status = 200;
 
     Phone phone = phone_convert(args->phone);
     user_id_t user_id = phone_search(&phone);
 
     if (user_id == 0 || check_user_id(user_id, &user) == -1) {
-        memset(&response->created, 1, 1);
+        memset(&body->created, 1, 1);
 
         // clear the user
         memset(&user, 0, sizeof(User));
@@ -214,31 +174,33 @@ void user_login(Request request, Response res) {
         // add it
         user_id = user_add(&user);
     } else {
-        memset(&response->created, 0, 1);
+        memset(&body->created, 0, 1);
 
         // update the user token
         memcpy(user.token, args->token, sizeof(user.token));
         fwrite(&user, sizeof(User), 1, udb);
     }
 
-    memcpy(&response->user_id, &user_id, sizeof(user_id_t));
-    memcpy(&response->user, &user, sizeof(User));
+    memcpy(&body->user_id, &user_id, sizeof(user_id_t));
+    memcpy(&body->user, &user, sizeof(User));
 }
 
-void user_update(Request request, Response response) {
+void user_update(RequestData request, Response *response) {
     User user;
     UserUpdateArgs *args = (UserUpdateArgs *)request;
 
+    response->md.status = 200;
+    response->md.size = 0;
+
     if (check_user_id(args->user_id, &user) == -1) {
-        response[0] = 4;
+        response->md.status = 401;
         return;
     }
 
     if (args->user.flag == DELETED_FLAG) {
         user.flag = DELETED_FLAG;
         if (fwrite(&user, sizeof(User), 1, udb) != 1) {
-            // somthing went worng
-            response[0] = 1;
+            response->md.status = 500;
             return;
         }
 
@@ -249,17 +211,14 @@ void user_update(Request request, Response response) {
         users_counts--;
         append_empty_user_id(args->user_id);
 
-        response[0] = 0;
+        response->md.status = 200;
         return;
     }
 
     if (fwrite(&args->user, sizeof(User), 1, udb) != 1) {
-        // somthing went worng
-        response[0] = 1;
+        response->md.status = 500;
         return;
     }
-
-    response[0] = 0;
 }
 
 void user_setup(void) {
