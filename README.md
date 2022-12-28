@@ -58,3 +58,4 @@ typedef struct {
 * [x] a visual representation for the phone index
 * [ ] check if the user picture is all null or not
       if it is get random bytes again
+* [ ] handling the kill signals
