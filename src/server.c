@@ -10,9 +10,9 @@
 #include <sys/un.h>
 #include <sys/types.h>
 
-#include "../plutus.h"
-#include "../user/user.h"
-#include "../admin/admin.h"
+#include "plutus.h"
+#include "user.h"
+#include "admin.h"
 
 
 #define SOCK_PATH "/tmp/plutus.server.sock"

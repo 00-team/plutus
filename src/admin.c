@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "./admin.h"
+#include "admin.h"
 
 FILE *adb;
 

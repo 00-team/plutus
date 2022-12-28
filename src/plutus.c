@@ -4,19 +4,34 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
+#include <signal.h>
+#include <unistd.h>
 
 #include "plutus.h"
+#include "logger.h"
+
+#define LOG_SCTOR SECTOR_MAIN
 
 
 int main() {
-    setup_files();
+
+    signal(SIGINT, cleanup_handler);
+
+
+    logger_setup();
+    if (setup_files()) {
+        log_error("exiting due to an error while setting up the files");
+        return EXIT_FAILURE;
+    }
+
     user_setup();
     phone_setup();
 
     server_run();
 
     clean_up_files();
-    return 0;
+    logger_cleanup();
+    return EXIT_SUCCESS;
 
     // clock_t begin = clock();
     // user_read(696969);

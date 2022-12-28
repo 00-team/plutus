@@ -1,6 +1,6 @@
 
-#ifndef USER_PHONE_H
-#define USER_PHONE_H
+#ifndef __USER_PHONE_H__
+#define __USER_PHONE_H__
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -41,4 +41,4 @@ Phone phone_convert(char *phone_number);
 bool phone_update(Phone *phone, user_id_t value);
 user_id_t phone_search(Phone *phone);
 
-#endif // USER_PHONE_H
+#endif // __USER_PHONE_H__

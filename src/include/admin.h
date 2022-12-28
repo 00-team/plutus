@@ -1,9 +1,9 @@
 
-#ifndef ADMIN_ADMIN_H
-#define ADMIN_ADMIN_H
+#ifndef __ADMIN_ADMIN_H__
+#define __ADMIN_ADMIN_H__
 
 #include <stddef.h>
-#include "../user/user.h"
+#include "user.h"
 
 typedef unsigned int admin_id_t;
 
@@ -21,7 +21,7 @@ typedef struct {
 
 
 
-#include "../server/api.h"
+#include "api.h"
 
 void admin_get(RequestData request, Response *response);
 // void admin_update(RequestData request, Response *response);
@@ -33,4 +33,4 @@ _Static_assert(sizeof(Admin) == 136, "invalid Admin size");
 _Static_assert(sizeof(AdminGetBody) == 132, "invalid AdminGetBody size");
 _Static_assert(offsetof(AdminGetBody, perms) == 4, "invalid AdminGetBody->perms offset");
 
-#endif
+#endif // __ADMIN_ADMIN_H__

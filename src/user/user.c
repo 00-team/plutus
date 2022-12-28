@@ -5,8 +5,11 @@
 #include <string.h>
 #include <sys/random.h>
 
-#include "../plutus.h"
+#include "plutus.h"
+#include "logger.h"
 #include "phone.h"
+
+#define LOG_SCTOR SECTOR_USER
 
 
 FILE *udb = NULL;
@@ -95,6 +98,7 @@ char check_user_id(user_id_t user_id, User *user) {
 
 // add a new user
 user_id_t user_add(User *user) {
+    log_info("adding a user");
     user_id_t user_id = get_empty_user_id();
     Phone phone = phone_convert(user->phone);;
 
@@ -222,6 +226,7 @@ void user_update(RequestData request, Response *response) {
 }
 
 void user_setup(void) {
+    log_info("starting user_setup");
     User user;
 
     // clear the empty_ids list
@@ -238,6 +243,7 @@ void user_setup(void) {
         if (user.flag == DELETED_FLAG) {
             users_counts--;
             append_empty_user_id(current_user_id);
+            log_info("found a empty user slot: %lld", current_user_id);
         }
     }
 }

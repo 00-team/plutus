@@ -1,11 +1,11 @@
 
-#ifndef SERVER_API_H
-#define SERVER_API_H
+#ifndef __SERVER_API_H__
+#define __SERVER_API_H__
 
 #include <stddef.h>
 #include <sys/socket.h>
 #include <stdbool.h>
-#include "../user/user.h"
+#include "user.h"
 
 #define MAX_REQUEST_SIZE 1024
 #define RESPONSE_BODY_SIZE 1024 // 1K
@@ -52,4 +52,4 @@ _Static_assert(sizeof(Response) == 1032, "Response size is invalid");
 _Static_assert(sizeof(bool) == 1, "bool size is invalid");
 
 
-#endif // SERVER_API_H
+#endif // __SERVER_API_H__

@@ -1,6 +1,6 @@
 
-#ifndef USER_USER_H
-#define USER_USER_H
+#ifndef __USER_USER_H__
+#define __USER_USER_H__
 
 #include <stddef.h>
 
@@ -38,7 +38,7 @@ typedef struct {
 } UserUpdateArgs;
 
 
-#include "../server/api.h"
+#include "api.h"
 
 void user_get(RequestData request, Response *response);
 void user_count(RequestData request, Response *response);
@@ -63,4 +63,4 @@ _Static_assert(offsetof(UserUpdateArgs, user) == 8, "offset of UserUpdateArgs->u
 
 
 
-#endif // USER_USER_H
+#endif // __USER_USER_H__

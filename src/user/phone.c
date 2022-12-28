@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <time.h>
 
-#include "../plutus.h"
+#include "plutus.h"
 #include "phone.h"
 
 
@@ -164,7 +164,7 @@ void phone_setup(void) {
             fwrite(temp, sizeof(Node), 1, phdb);
         }
 
-        fflush(phdb);
+        // fflush(phdb);
         return;
     }
 
