@@ -136,3 +136,6 @@ data/
 
 # ignore all the object files
 *.o
+
+# logs
+logs/
