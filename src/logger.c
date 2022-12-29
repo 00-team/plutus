@@ -9,11 +9,16 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+
 #include "logger.h"
 
 
 #define MESSAGE_MAX 8196
 #define INFO_MAX 512
+#define PATH_MAX 40
 
 
 typedef struct {
@@ -27,7 +32,8 @@ typedef struct {
 
 typedef struct {
     FILE *file;
-    const char *name;
+    const char name[PATH_MAX - 15];
+    char path[PATH_MAX];
 } SectorFile;
 
 
@@ -41,6 +47,16 @@ static SectorFile SECTORS[] = {
     [SECTOR_ADMIN] = { NULL, "admin" },
 };
 
+static void make_dirs() {
+    char dirname[PATH_MAX - 10];
+
+    mkdir("logs", 0755);
+
+    for (uint8_t i = 0; i < SECTOR_LENGTH; i++) {
+        snprintf(dirname, sizeof(dirname), "logs/%s", SECTORS[i].name);
+        mkdir(dirname, 0755);
+    }
+}
 
 static void get_datetime(DateTime *datetime) {
     struct timeval tv;
@@ -60,15 +76,23 @@ static void get_datetime(DateTime *datetime) {
 }
 
 static void update_sectors(DateTime *datetime) {
-    char logpath[40];
+    bool called_make_dirs = false;
+    FILE *fd = NULL;
 
     for (uint8_t i = 0; i < SECTOR_LENGTH; i++) {
         snprintf(
-            logpath, sizeof(logpath), "logs/%s/%02d_%02d.log", 
+            SECTORS[i].path, PATH_MAX, "logs/%s/%02d-%02d.log", 
             SECTORS[i].name, datetime->month, datetime->day
         );
 
-        SECTORS[i].file = fopen(logpath, "a");
+        fd = fopen(SECTORS[i].path, "a");
+        if (!called_make_dirs && fd == NULL && errno == ENOENT) {
+            make_dirs();
+            called_make_dirs = true;
+            fd = fopen(SECTORS[i].path, "a");
+        }
+
+        SECTORS[i].file = fd;
     }
 
     sector_file_day = datetime->day;
@@ -98,16 +122,14 @@ void logger(const Sector index, const char *tag, const char *format, ...) {
         tag
     );
 
-    if (datetime.day != sector_file_day) {
-        update_sectors(&datetime);
-    }
-
-
-    if (log_to_screen) {
+    if (log_to_screen)
         printf("%s %s\n", info, message);
-    }
-    
+
+
     if (log_to_file) {
+        if (datetime.day != sector_file_day || access(sctor->path, F_OK))
+            update_sectors(&datetime);
+
         if (sctor->file != NULL) {
             fprintf(sctor->file, "%s %s\n", info, message);
             fflush(sctor->file);
@@ -119,18 +141,9 @@ void logger(const Sector index, const char *tag, const char *format, ...) {
 
 
 void logger_setup(void) {
-    char dirname[32];
     DateTime datetime;
-
     get_datetime(&datetime);
-
-    mkdir("logs", 0755);
-
-    for (uint8_t i = 0; i < SECTOR_LENGTH; i++) {
-        snprintf(dirname, sizeof(dirname), "logs/%s", SECTORS[i].name);
-        mkdir(dirname, 0755);
-    }
-
+    make_dirs();
     update_sectors(&datetime);
 }
 
