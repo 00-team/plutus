@@ -15,7 +15,7 @@ bool setup_files(void);
 void cleanup_files(void);
 void cleanup_handler(int signum);
 off_t fsize(int fd);
-
+off_t seek_append(int fd, size_t size);
 
 // components
 void server_run(void);

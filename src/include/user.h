@@ -1,35 +1,41 @@
 
-#ifndef __USER_USER_H__
-#define __USER_USER_H__
+#ifndef __PLUTUS_USER_H__
+#define __PLUTUS_USER_H__
 
 #include <stddef.h>
+#include <inttypes.h>
+
+#include "types.h"
 
 #define USER_PICTURE_SIZE 4
 #define USER_TOKEN_SIZE 64
 #define USER_EMPTY_SIZE 100000 // 0.8 MegaBytes 100K user ids
 
-typedef unsigned long long user_id_t;
+#define USER_DELETED 1
+#define USER_BANNED 2
+
+typedef uint64_t user_id_t;
 
 typedef struct {
-    unsigned short cc;
+    uint16_t cc;
     char phone[12];
-    unsigned char flag;  // DELETED_FLAG or anything else
-    unsigned char ext;
-    unsigned char picture[4];
-    char token[USER_TOKEN_SIZE];
+    uint8_t flag;  // DELETED_FLAG or anything else
+    uint8_t ext;
+    bytes picture[4];
+    bytes token[USER_TOKEN_SIZE];
     char nickname[50];
 } User;
 
 typedef struct {
-    unsigned short cc;
+    uint16_t cc;
     char phone[12];
-    char token[USER_TOKEN_SIZE];
+    bytes token[USER_TOKEN_SIZE];
 } UserLoginArgs;
 
 typedef struct {
     user_id_t user_id;
     User user;
-    unsigned char created;
+    uint8_t created;
 } UserLoginBody;
 
 typedef struct {
@@ -63,4 +69,4 @@ _Static_assert(offsetof(UserUpdateArgs, user) == 8, "offset of UserUpdateArgs->u
 
 
 
-#endif // __USER_USER_H__
+#endif // __PLUTUS_USER_H__

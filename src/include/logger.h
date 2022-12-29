@@ -1,6 +1,6 @@
 
-#ifndef __LOGGER_H__
-#define __LOGGER_H__
+#ifndef __PLUTUS_LOGGER_H__
+#define __PLUTUS_LOGGER_H__
 
 #include <stdbool.h>
 
@@ -33,4 +33,4 @@ typedef enum {
 void logger(const Sector index, const Flag flag, const char *format, ...);
 
 
-#endif // __LOGGER_H__
+#endif // __PLUTUS_LOGGER_H__

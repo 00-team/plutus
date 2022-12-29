@@ -1,11 +1,14 @@
 
-#ifndef __SERVER_API_H__
-#define __SERVER_API_H__
+#ifndef __PLUTUS_API_H__
+#define __PLUTUS_API_H__
 
 #include <stddef.h>
 #include <sys/socket.h>
 #include <stdbool.h>
+#include <inttypes.h>
+
 #include "user.h"
+#include "types.h"
 
 #define MAX_REQUEST_SIZE 1024
 #define RESPONSE_BODY_SIZE 1024 // 1K
@@ -22,25 +25,25 @@ enum {
 };
 
 typedef struct {
-    unsigned short type;
-    char data[MAX_REQUEST_SIZE];
+    uint16_t type;
+    bytes data[MAX_REQUEST_SIZE];
 } Request;
 
 typedef struct {
-    unsigned int status; // html status codes
-    unsigned int size;
+    uint32_t status; // html status codes
+    uint32_t size;
 } ResponseMetaData;
 
 typedef struct {
     ResponseMetaData md;
-    char body[RESPONSE_BODY_SIZE];
+    bytes body[RESPONSE_BODY_SIZE];
 } Response;
 
-typedef char RequestData[MAX_REQUEST_SIZE];
+typedef bytes RequestData[MAX_REQUEST_SIZE];
 
 typedef struct {
     void (*func)(RequestData, Response*);
-    unsigned int args_size;
+    uint32_t args_size;
 } API;
 
 
@@ -52,4 +55,4 @@ _Static_assert(sizeof(Response) == 1032, "Response size is invalid");
 _Static_assert(sizeof(bool) == 1, "bool size is invalid");
 
 
-#endif // __SERVER_API_H__
+#endif // __PLUTUS_API_H__
