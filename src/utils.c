@@ -39,26 +39,6 @@ void cleanup_handler(__attribute__((unused)) int signum) {
     if (udb  != -1) close(udb);
     if (phdb != -1) close(phdb);
     if (adb  != -1) close(adb);
-    
-    // if (udb != NULL) {
-    //     int udb_fd = fileno(udb);
-    //     fsync(udb_fd);
-    //     lseek(udb_fd, 0, SEEK_SET);
-    //     close(udb_fd);
-    // }
-    // if (phdb != NULL) {
-    //     // int phdb_fd = fileno(phdb);
-    //     // fsync(phdb_fd);
-    //     // printf("res: %ld\n", lseek(phdb_fd, 0, SEEK_SET));
-    //     // fflush(phdb);
-    //     fclose(phdb);
-    //     // close(phdb_fd);
-    // }
-    // if (adb != NULL) {
-    //     int adb_fd = fileno(adb);
-    //     fsync(adb_fd);
-    //     close(adb_fd);
-    // }
 
     _exit(0);
 }
@@ -67,27 +47,15 @@ int file_open(char *filename) {
 
     int fd = open(filename, O_RDWR | O_CREAT | O_NOATIME, 00644);
 
-    /*
-    FILE *f;
-
-    f = fopen(filename, "ab+");
-
-    if (f == NULL) {
-        log_trace("error while opening (%s) with ab+ flag", filename);
-        return NULL;
+    if (fd == -1) {
+        log_trace("error while opening (%s)!", filename);
+        return -1;
     }
 
-    if (fclose(f) != 0) {
-        log_trace("error while closing (%s) with ab+ flag", filename);
-        return NULL;
+    if (lseek(fd, 0, SEEK_CUR) == -1) {
+        log_trace("(%s) is not seekable!", filename);
+        return -1;
     }
-
-    f = fopen(filename, "rb+");
-    if (f == NULL) {
-        log_trace("error while opening (%s) with rb+ flag", filename);
-        return NULL;
-    }
-    */
 
     return fd;
 }
@@ -96,4 +64,16 @@ off_t fsize(int fd) {
     return lseek(fd, 0, SEEK_END);
     // fseek(f, 0, SEEK_END);
     // return ftell(f);
+}
+
+off_t seek_append(int fd, size_t size) {
+    off_t pos = lseek(fd, 0, SEEK_END);
+    off_t offset = pos % size;
+
+    if (offset != 0) {
+        log_error("seek_append: offset is wrong: %ld", offset);
+        return lseek(fd, size - offset, SEEK_CUR);
+    }
+
+    return pos;
 }
