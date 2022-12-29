@@ -13,10 +13,10 @@
 #include "plutus.h"
 #include "user.h"
 #include "admin.h"
+#include "logger.h"
 
-
+#define LOG_SCTOR SECTOR_SERVER
 #define SOCK_PATH "/tmp/plutus.server.sock"
-
 #define RMDS sizeof(ResponseMetaData)
 
 const ResponseMetaData INVALID_REQUEST_ARGS = { 403, 0 };
@@ -34,7 +34,7 @@ static const API apis[] = {
 
 
 void server_run(void) {
-    printf("------------ SERVER RUNNING ------------\n");
+    log_info("server is running");
 
     int request_size = 0;
     Request request;
@@ -47,7 +47,7 @@ void server_run(void) {
 
     int sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (sockfd == -1) {
-        printf("SOCKET ERROR\n");
+        log_error("socket error!");
         return;
     }
 
@@ -56,7 +56,7 @@ void server_run(void) {
     unlink(SOCK_PATH);
 
     if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
-        printf("BIND ERROR\n");
+        log_error("socket bind error");
         close(sockfd);
         return;
     }
@@ -65,7 +65,7 @@ void server_run(void) {
         request_size = recvfrom(sockfd, &request, sizeof(request), 0, &ca, &cal);
 
         if (request_size < 0) {
-            printf("error receiving bytes!\n");
+            log_error("error receiving bytes!");
             break;
         }
 
@@ -74,12 +74,13 @@ void server_run(void) {
 
         // invalid request
         if (request.type >= RQT_LENGTH) {
+            log_info("invalid request type: %d", request.type);
             sendto(sockfd, &REQUEST_NOT_FOUND, RMDS, 0, &ca, cal);
             continue;
         }
         
-        printf("request_size: %d\n", request_size);
-        printf("request.type: %d\n", request.type);
+        log_info("request size: %d", request_size);
+        log_info("request type: %d", request.type);
 
         route = apis[request.type];
 
@@ -91,8 +92,14 @@ void server_run(void) {
 
         route.func(request.data, &response);
 
+        log_info("response size  : %d", response.md.size);
+        log_info("response status: %d", response.md.status);
+
         if (sendto(sockfd, &response, RMDS + response.md.size, 0, &ca, cal) == -1) {
-            printf("ERROR SENDING RESPONSE!\n");
+            log_error(
+                "error sending the response to: %s", 
+                ((struct sockaddr_un *)&ca)->sun_path
+            );
         }
     }
 
