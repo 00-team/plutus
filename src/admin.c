@@ -1,12 +1,15 @@
 
-#include <stdio.h>
+// #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "admin.h"
+#include "logger.h"
 
-FILE *adb;
+#define LOG_SCTOR SECTOR_ADMIN
 
 
+int adb = -1;
 
 
 void admin_test(void);
@@ -19,15 +22,19 @@ admin_id_t admin_search(user_id_t user_id, Admin *admin) {
     admin_id_t admin_id = 0;
 
     // go to start of the database
-    fseek(adb, 0, SEEK_SET);
+    // fseek(adb, 0, SEEK_SET);
+    lseek(adb, 0, SEEK_SET);
 
-    while (fread(admin, sizeof(Admin), 1, adb)) {
+    
+
+    // while (fread(admin, sizeof(Admin), 1, adb)) {
+    while (read(adb, admin, sizeof(Admin)) == sizeof(Admin)) {
         admin_id++;
 
         if (user_id == admin->user_id) {
-            printf("admin_id: %d\n", admin_id);
-            printf("admin user_id: %lld == %lld\n", admin->user_id, user_id);
-            fseek(adb, -sizeof(Admin), SEEK_CUR);
+            log_info("adming search found: %d, user_id: %lld", admin_id, admin->user_id);
+            // fseek(adb, -sizeof(Admin), SEEK_CUR);
+            lseek(adb, -sizeof(Admin), SEEK_CUR);
             return admin_id;
         }
     }
@@ -122,12 +129,15 @@ void admin_login(RequestData request, Response *response) {
 void admin_test(void) {
     Admin admin;
 
-    fseek(adb, 0, SEEK_SET);
+    // fseek(adb, 0, SEEK_SET);
+    lseek(adb, 0, SEEK_SET);
     
     memset(&admin, 0, sizeof(Admin));
     admin.user_id = 1;
     memset(admin.perms, ' ', sizeof(admin.perms));
 
-    fwrite(&admin, sizeof(Admin), 1, adb);
-    fflush(adb);
+    // fwrite(&admin, sizeof(Admin), 1, adb);
+    write(adb, &admin, sizeof(Admin));
+    // fflush(adb);
+    fsync(adb);
 }

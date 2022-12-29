@@ -3,6 +3,7 @@
 #define __PLUTUS_H__
 
 #include <stdbool.h>
+#include <fcntl.h>
 
 #define USER_DB_FILENAME  "data/user.bin"
 #define PHONE_DB_FILENAME "data/phone.bin"
@@ -11,9 +12,9 @@
 
 // utils
 bool setup_files(void);
-void clean_up_files(void);
+void cleanup_files(void);
 void cleanup_handler(int signum);
-long fsize(FILE *f);
+off_t fsize(int fd);
 
 
 // components

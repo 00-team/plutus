@@ -17,8 +17,8 @@ int main() {
 
     signal(SIGINT, cleanup_handler);
 
-
     logger_setup();
+    
     if (setup_files()) {
         log_error("exiting due to an error while setting up the files");
         return EXIT_FAILURE;
@@ -29,8 +29,9 @@ int main() {
 
     server_run();
 
-    clean_up_files();
+    cleanup_files();
     logger_cleanup();
+    
     return EXIT_SUCCESS;
 
     // clock_t begin = clock();

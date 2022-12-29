@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include <string.h>
 #include <sys/random.h>
 
@@ -12,7 +13,7 @@
 #define LOG_SCTOR SECTOR_USER
 
 
-FILE *udb = NULL;
+int udb = -1;
 const char DELETED_FLAG = 'D';
 static user_id_t users_counts = 0;
 static user_id_t empty_ids[USER_EMPTY_SIZE];
@@ -86,9 +87,12 @@ char check_user_id(user_id_t user_id, User *user) {
     if (pos < 0 || pos >= fsize(udb))
         return -1;
 
-    fseek(udb, pos, SEEK_SET);
-    fread(user, sizeof(User), 1, udb);
-    fseek(udb, pos, SEEK_SET);
+    // fseek(udb, pos, SEEK_SET);
+    // fread(user, sizeof(User), 1, udb);
+    // fseek(udb, pos, SEEK_SET);
+    lseek(udb, pos, SEEK_SET);
+    read(udb, user, sizeof(User));
+    lseek(udb, pos, SEEK_SET);
 
     if (user->flag == DELETED_FLAG)
         return -1;
@@ -107,9 +111,11 @@ user_id_t user_add(User *user) {
     if (user_id == 0)
         user_id = (fsize(udb) / sizeof(User)) + 1;
     else
-        fseek(udb, (user_id - 1) * sizeof(User), SEEK_SET);
+        // fseek(udb, (user_id - 1) * sizeof(User), SEEK_SET);
+        lseek(udb, (user_id - 1) * sizeof(User), SEEK_SET);
 
-    if (fwrite(user, sizeof(User), 1, udb) != 1)
+    // if (fwrite(user, sizeof(User), 1, udb) != 1)
+    if (write(udb, user, sizeof(User)) != sizeof(User))
         return 0;
 
     phone_update(&phone, user_id);
@@ -182,7 +188,8 @@ void user_login(RequestData request, Response *response) {
 
         // update the user token
         memcpy(user.token, args->token, sizeof(user.token));
-        fwrite(&user, sizeof(User), 1, udb);
+        // fwrite(&user, sizeof(User), 1, udb);
+        write(udb, &user, sizeof(User));
     }
 
     memcpy(&body->user_id, &user_id, sizeof(user_id_t));
@@ -203,7 +210,8 @@ void user_update(RequestData request, Response *response) {
 
     if (args->user.flag == DELETED_FLAG) {
         user.flag = DELETED_FLAG;
-        if (fwrite(&user, sizeof(User), 1, udb) != 1) {
+        // if (fwrite(&user, sizeof(User), 1, udb) != 1) {
+        if (write(udb, &user, sizeof(User)) != sizeof(User)) {
             response->md.status = 500;
             return;
         }
@@ -219,7 +227,8 @@ void user_update(RequestData request, Response *response) {
         return;
     }
 
-    if (fwrite(&args->user, sizeof(User), 1, udb) != 1) {
+    // if (fwrite(&args->user, sizeof(User), 1, udb) != 1) {
+    if (write(udb, &args->user, sizeof(User)) != sizeof(User)) {
         response->md.status = 500;
         return;
     }
@@ -234,10 +243,12 @@ void user_setup(void) {
 
     users_counts = fsize(udb) / sizeof(User);
 
-    fseek(udb, 0, SEEK_SET);
+    // fseek(udb, 0, SEEK_SET);
+    lseek(udb, 0, SEEK_SET);
     user_id_t current_user_id = 0;
 
-    while (fread(&user, sizeof(User), 1, udb)) {
+    // while (fread(&user, sizeof(User), 1, udb)) {
+    while (read(udb, &user, sizeof(User)) == sizeof(User)) {
         current_user_id++;
 
         if (user.flag == DELETED_FLAG) {
