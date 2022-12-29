@@ -35,16 +35,27 @@ void print_phone(Phone *phone) {
 
 
 // node
-void node_write(Node node) {
+bool node_write(Node node) {
     if (write(phdb, node, sizeof(Node)) != sizeof(Node)) {
         log_error("node_write went wrong!");
+        return false;
     }
+
+    return true;
 }
 
-void node_read(Node node) {
-    if (read(phdb, node, sizeof(Node)) != sizeof(Node)) {
-        log_error("node_read went wrong!");
+bool node_read(Node node) {
+    ssize_t size = read(phdb, node, sizeof(Node));
+    if (size != sizeof(Node)) {
+        if (size == 0)
+            log_info("node_read end of file!");
+        else
+            log_error("node_read went wrong!");
+
+        return false;
     }
+
+    return true;
 }
 
 // convert a phone number string
@@ -77,7 +88,6 @@ bool phone_update(Phone *phone, user_id_t value) {
 
     for (link_t i = 0; i < LINKS_LEN; i++) {
         link = phone->links[i];
-        // fseek(phdb, pos, SEEK_SET);
         lseek(phdb, pos, SEEK_SET);
         node_read(node);
 
@@ -85,10 +95,9 @@ bool phone_update(Phone *phone, user_id_t value) {
         // if it is then we will write rest of the nodes
         if (node[link] == 0) {
             // read the file size (last byte position)
-            size_t end_of_file = fsize(phdb);
+            off_t end_of_file = seek_append(phdb, sizeof(Node));
 
             // go back to the current node for updating it
-            // fseek(phdb, pos, SEEK_SET);
             lseek(phdb, pos, SEEK_SET);
 
             // set the next imaginary node position to the current one
@@ -101,8 +110,7 @@ bool phone_update(Phone *phone, user_id_t value) {
             node_write(node);
 
             // go to the end of the file for appending to it
-            // fseek(phdb, 0, SEEK_END);
-            lseek(phdb, 0, SEEK_END);
+            lseek(phdb, end_of_file, SEEK_SET);
 
             // empty the node
             memset(node, 0, sizeof(Node));
@@ -135,7 +143,6 @@ bool phone_update(Phone *phone, user_id_t value) {
 
             node[link] = value;
 
-            // fseek(phdb, pos, SEEK_SET);
             lseek(phdb, pos, SEEK_SET);
             node_write(node);
 
@@ -155,7 +162,6 @@ user_id_t phone_search(Phone *phone) {
     Node node;
 
     for (link_t i = 0; i < LINKS_LEN; i++) {
-        // fseek(phdb, pos, SEEK_SET);
         lseek(phdb, pos, SEEK_SET);
         node_read(node);
         pos = node[phone->links[i]];
@@ -169,15 +175,9 @@ user_id_t phone_search(Phone *phone) {
 
 
 void phone_setup(void) {
-    long phdb_size = fsize(phdb);
+    off_t phdb_size = fsize(phdb);
 
-    // fseek(phdb, 0, SEEK_SET);
     lseek(phdb, 0, SEEK_SET);
-
-    if (phdb_size < 0) {
-        printf("Error getting phone database size");
-        return;
-    }
 
     if (phdb_size == 0) {
         Node temp;
@@ -187,14 +187,12 @@ void phone_setup(void) {
             node_write(temp);
         }
 
-        log_info("phone setup finish");
-
-        // fflush(phdb);
+        log_info("setup finish");
         return;
     }
 
     if ((size_t)phdb_size < sizeof(Node) * CACHE_SIZ) {
-        printf("ERROR loading the phone database!");
+        log_error("database setup %ld != %ld!", phdb_size, sizeof(Node) * CACHE_SIZ);
     }
 }
 
