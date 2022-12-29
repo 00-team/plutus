@@ -12,16 +12,25 @@ typedef enum {
     SECTOR_MAIN,
     SECTOR_USER,
     SECTOR_ADMIN,
+    SECTOR_SERVER,
     SECTOR_LENGTH,
 } Sector;
 
-#define log_info(...)  logger(LOG_SCTOR, "INFO",  __VA_ARGS__)
-#define log_warn(...)  logger(LOG_SCTOR, "WANR",  __VA_ARGS__)
-#define log_debug(...) logger(LOG_SCTOR, "DEBUG", __VA_ARGS__)
-#define log_error(...) logger(LOG_SCTOR, "ERROR", __VA_ARGS__)
-#define log_trace(...) logger(LOG_SCTOR, "ERROR", LOG_THROW_LOCATION __VA_ARGS__)
 
-void logger(const Sector index, const char *tag, const char *format, ...);
+typedef enum {
+    LFLAG_INFO,
+    LFLAG_WARN,
+    LFLAG_DEBUG,
+    LFLAG_ERROR,
+} Flag;
+
+#define log_info(...)  logger(LOG_SCTOR, LFLAG_INFO,  __VA_ARGS__)
+#define log_warn(...)  logger(LOG_SCTOR, LFLAG_WARN,  __VA_ARGS__)
+#define log_debug(...) logger(LOG_SCTOR, LFLAG_DEBUG, __VA_ARGS__)
+#define log_error(...) logger(LOG_SCTOR, LFLAG_ERROR, __VA_ARGS__)
+#define log_trace(...) logger(LOG_SCTOR, LFLAG_ERROR, LOG_THROW_LOCATION __VA_ARGS__)
+
+void logger(const Sector index, const Flag flag, const char *format, ...);
 
 
 #endif // __LOGGER_H__

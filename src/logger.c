@@ -42,9 +42,10 @@ static bool log_to_screen = true;
 static bool log_to_file = true;
 
 static SectorFile SECTORS[] = {
-    [SECTOR_MAIN]  = { NULL, "main"  },
-    [SECTOR_USER]  = { NULL, "user"  },
-    [SECTOR_ADMIN] = { NULL, "admin" },
+    [SECTOR_MAIN]   = { NULL, "main"   },
+    [SECTOR_USER]   = { NULL, "user"   },
+    [SECTOR_ADMIN]  = { NULL, "admin"  },
+    [SECTOR_SERVER] = { NULL, "server" },
 };
 
 static void make_dirs() {
@@ -98,16 +99,36 @@ static void update_sectors(DateTime *datetime) {
     sector_file_day = datetime->day;
 }
 
+static char *get_tag(Flag flag, bool color) {
+    if (color) {
+        switch (flag) {
+            case LFLAG_INFO:  return "<\033[34mINFO\033[0m> ";
+            case LFLAG_WARN:  return "<\033[33mWARN\033[0m> ";
+            case LFLAG_DEBUG: return "<\033[35mDEBUG\033[0m>";
+            case LFLAG_ERROR: return "<\033[31mERROR\033[0m>";
+        }
+    }
 
-void logger(const Sector index, const char *tag, const char *format, ...) {
+    switch (flag) {
+        case LFLAG_INFO:  return "<INFO> ";
+        case LFLAG_WARN:  return "<WARN> ";
+        case LFLAG_DEBUG: return "<DEBUG>";
+        case LFLAG_ERROR: return "<ERROR>";
+    }
+
+    return "NULL";
+}
+
+void logger(const Sector index, const Flag flag, const char *format, ...) {
 
     DateTime datetime;
     va_list args;
 
-    SectorFile *sctor = &SECTORS[index];
+    SectorFile *sector = &SECTORS[index];
 
     char message[MESSAGE_MAX];
     char info[INFO_MAX];
+    char info_color[INFO_MAX];
 
     // format the message
     va_start(args, format);
@@ -117,22 +138,28 @@ void logger(const Sector index, const char *tag, const char *format, ...) {
     // update the datetime
     get_datetime(&datetime);
     snprintf(
-        info, sizeof(info), "%02d:%02d:%02d.%03d <%s>", 
+        info, sizeof(info), "%02d:%02d:%02d.%03d %s", 
         datetime.hour, datetime.minutes, datetime.seconds, datetime.ms,
-        tag
+        get_tag(flag, false)
+    );
+
+    snprintf(
+        info_color, sizeof(info_color), "\033[32m%02d:%02d:%02d.%03d\033[0m %s", 
+        datetime.hour, datetime.minutes, datetime.seconds, datetime.ms,
+        get_tag(flag, true)
     );
 
     if (log_to_screen)
-        printf("%s %s\n", info, message);
+        printf("%s [\033[36m%s\033[0m] %s\n", info_color, sector->name, message);
 
 
     if (log_to_file) {
-        if (datetime.day != sector_file_day || access(sctor->path, F_OK))
+        if (datetime.day != sector_file_day || access(sector->path, F_OK))
             update_sectors(&datetime);
 
-        if (sctor->file != NULL) {
-            fprintf(sctor->file, "%s %s\n", info, message);
-            fflush(sctor->file);
+        if (sector->file != NULL) {
+            fprintf(sector->file, "%s %s\n", info, message);
+            fflush(sector->file);
         } else {
             update_sectors(&datetime);
         }
