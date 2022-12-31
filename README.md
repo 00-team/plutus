@@ -59,5 +59,5 @@ typedef struct {
 * [ ] check if the user picture is all null or not
       if it is get random bytes again
 * [ ] handling the kill signals
-* [ ] go to the end of a file based on each item size not file size
+* [x] go to the end of a file based on each item size not file size
       e.g. dont go to the SEEK_END instead calc the position of new item and go to there
