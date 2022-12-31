@@ -61,3 +61,4 @@ typedef struct {
 * [ ] handling the kill signals
 * [x] go to the end of a file based on each item size not file size
       e.g. dont go to the SEEK_END instead calc the position of new item and go to there
+* [ ] check invalid data
