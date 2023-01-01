@@ -6,6 +6,11 @@
 #include <time.h>
 #include <signal.h>
 #include <unistd.h>
+#include <endian.h>
+
+#if __BYTE_ORDER != __LITTLE_ENDIAN
+#error byte order is not little endian 
+#endif
 
 #include "plutus.h"
 #include "logger.h"
