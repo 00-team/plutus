@@ -120,7 +120,11 @@ void admin_add(RequestData request, Response *response) {
         return;
     }
 
-    admin_id = (seek_append(adb, sizeof(Admin)) / sizeof(Admin)) + 1;
+    // search for an empty admin slot
+    admin_id = admin_search(0, &admin);
+    // if didn't find any append the new amdin
+    if (admin_id == 0)
+        admin_id = (seek_append(adb, sizeof(Admin)) / sizeof(Admin)) + 1;
     
     if (!admin_write(args)) {
         response->md.size = 0;
