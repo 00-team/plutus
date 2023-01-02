@@ -23,13 +23,15 @@ const ResponseMetaData INVALID_REQUEST_ARGS = { 403, 0 };
 const ResponseMetaData REQUEST_NOT_FOUND    = { 404, 0 };
 
 static const API apis[] = {
-    /*                                   args size               */
-    [RQT_USER_GET]    = { user_get,      sizeof(user_id_t)        },
-    [RQT_USER_COUNT]  = { user_count,    sizeof(bool)             },
-    [RQT_USER_LOGIN]  = { user_login,    sizeof(UserLoginArgs)    },
-    [RQT_USER_UPDATE] = { user_update,   sizeof(UserUpdateArgs)   },
+    /*                                         args size               */
+    [RQT_USER_GET]       = { user_get,      sizeof(user_id_t)           },
+    [RQT_USER_COUNT]     = { user_count,    sizeof(bool)                },
+    [RQT_USER_LOGIN]     = { user_login,    sizeof(UserLoginArgs)       },
+    [RQT_USER_UPDATE]    = { user_update,   sizeof(UserUpdateArgs)      },
 
-    [RQT_ADMIN_GET]   = { admin_get,     sizeof(user_id_t)        },
+    [RQT_ADMIN_GET]      = { admin_get,     sizeof(user_id_t)           },
+    [RQT_ADMIN_ADD]      = { admin_add,     sizeof(Admin)               },
+    [RQT_ADMIN_UPDATE]   = { admin_update,  sizeof(AdminUpdateArgs)     },
 };
 
 

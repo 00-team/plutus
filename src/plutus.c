@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <endian.h>
 
+// BYTE_ORDER_DEPENDENT
 #if __BYTE_ORDER != __LITTLE_ENDIAN
 #error byte order is not little endian 
 #endif
