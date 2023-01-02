@@ -20,6 +20,8 @@ enum {
     RQT_USER_UPDATE,
 
     RQT_ADMIN_GET,
+    RQT_ADMIN_ADD,
+    RQT_ADMIN_UPDATE,
 
     RQT_LENGTH,
 };
