@@ -124,16 +124,24 @@ char check_user_id(user_id_t user_id, User *user) {
 
 // add a new user
 user_id_t user_add(User *user) {
-    log_info("adding a user");
+    log_info("adding a user with phone: +%d %s", user->cc, user->phone);
     user_id_t user_id = get_empty_user_id();
-    Phone phone = phone_convert(user->phone);;
+    log_info("empty user_id: %"PRIu64, user_id);
+    Phone phone = phone_convert(user->phone);
+    log_info("phone index: %"PRIu64, phone.index);
 
     getrandom(user->picture, sizeof(user->picture), GRND_NONBLOCK);
+    log_info(
+        "picture: %02x%02x%02x%02x", 
+        user->picture[0], user->picture[1], user->picture[2], user->picture[3]
+    );
 
     if (user_id == 0)
         user_id = (seek_append(udb, sizeof(User)) / sizeof(User)) + 1;
     else
         lseek(udb, (user_id - 1) * sizeof(User), SEEK_SET);
+    
+    log_info("user_id: %"PRIu64, user_id);
     
     if (!user_write(user))
         return 0;
@@ -266,7 +274,9 @@ void user_setup(void) {
 
     while (user_read(&user)) {
         current_user_id++;
-        user_print(&user, current_user_id);
+        // TODO: check if user data is valid or not
+        // if not, mark the user as empty
+        // user_print(&user, current_user_id);
 
         if (user.flag == DELETED_FLAG) {
             users_counts--;
