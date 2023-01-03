@@ -286,6 +286,19 @@ void users_get(RequestData request, Response *response) {
     response->md.size = read_size;
 }
 
+
+bool check_valid_user(User *user) {
+    if (user->cc > 999) return false;
+    if (user->flag > 2) return false;
+    
+    for (uint8_t i = 0; i < sizeof(user->phone); i++) {
+        if (user->phone[i] == 0) continue;
+        if (user->phone[i] > '9' || user->phone[i] < '0') return false;
+    }
+
+    return true;
+}
+
 void user_setup(void) {
     log_info("starting user_setup");
     User user;
@@ -300,11 +313,8 @@ void user_setup(void) {
 
     while (user_read(&user)) {
         current_user_id++;
-        // TODO: check if user data is valid or not
-        // if not, mark the user as empty
-        // user_print(&user, current_user_id);
 
-        if (user.flag == DELETED_FLAG) {
+        if (user.flag == DELETED_FLAG || !check_valid_user(&user)) {
             users_counts--;
             append_empty_user_id(current_user_id);
             log_info("found a empty user slot: %lld", current_user_id);
