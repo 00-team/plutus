@@ -260,9 +260,12 @@ void users_get(RequestData request, Response *response) {
     }
 
     lseek(udb, pos, SEEK_SET);
-    if (!obj_read(udb, response->body, sizeof(User) * USER_PAGE_SIZE, &read_size)) {
+    read_size = read(udb, response->body, sizeof(User) * USER_PAGE_SIZE);
+    
+    if (read_size < 0) {
         response->md.size = 0;
         response->md.status = 500;
+        log_error("[users_get]: %d. %s", errno, strerror(errno));
         return;
     }
 
