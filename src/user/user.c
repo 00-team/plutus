@@ -15,38 +15,23 @@
 
 
 int udb = -1;
-const char DELETED_FLAG = 'D';
+
 static user_id_t users_counts = 0;
 static user_id_t empty_ids[USER_EMPTY_SIZE];
 static user_id_t empty_ids_count = 0;
 
 
 bool user_write(User *user) {
-    if (write(udb, user, sizeof(User)) != sizeof(User)) {
-        log_error("[user_write]: %d.%s", errno, strerror(errno));
-        return false;
-    }
-
-    return true;
+    return obj_write(udb, user, sizeof(User), NULL);
 }
 
 bool user_read(User *user) {
-    ssize_t size = read(udb, user, sizeof(User));
-    if (size != sizeof(User)) {
-        if (size == 0)
-            log_info("user_read end of file!");
-        else
-            log_error("[user_read]: %d.%s", errno, strerror(errno));
-
-        return false;
-    }
-
-    return true;
+    return obj_read(udb, user, sizeof(User), NULL);
 }
 
 
 void user_print(User *user, user_id_t id) {
-    if (user->flag == DELETED_FLAG) {
+    if (user->flag == USER_DELETED) {
         printf("--------DELETED-------\n");
     } else {
         printf("----------------------\n");
@@ -117,7 +102,7 @@ char check_user_id(user_id_t user_id, User *user) {
     user_read(user);
     lseek(udb, pos, SEEK_SET);
 
-    if (user->flag == DELETED_FLAG)
+    if (user->flag == USER_DELETED)
         return -1;
 
     return 0;
@@ -236,8 +221,8 @@ void user_update(RequestData request, Response *response) {
         return;
     }
 
-    if (args->user.flag == DELETED_FLAG) {
-        user.flag = DELETED_FLAG;
+    if (args->user.flag == USER_DELETED) {
+        user.flag = USER_DELETED;
 
         if (!user_write(&user)) {
             response->md.status = 500;
@@ -275,10 +260,9 @@ void users_get(RequestData request, Response *response) {
     }
 
     lseek(udb, pos, SEEK_SET);
-    if ((read_size = read(udb, response->body, sizeof(User) * USER_PAGE_SIZE)) < 0) {
+    if (!obj_read(udb, response->body, sizeof(User) * USER_PAGE_SIZE, &read_size)) {
         response->md.size = 0;
         response->md.status = 500;
-        log_error("[users_get] read: %d.%s", errno, strerror(errno));
         return;
     }
 
@@ -288,8 +272,14 @@ void users_get(RequestData request, Response *response) {
 
 
 bool check_valid_user(User *user) {
-    if (user->cc > 999) return false;
-    if (user->flag > 2) return false;
+    if (user->cc == 0 || user->cc > 999)
+        return false;
+
+    if (user->flag > 2) 
+        return false;
+
+    if (user->phone[0] == 0)
+        return false;
     
     for (uint8_t i = 0; i < sizeof(user->phone); i++) {
         if (user->phone[i] == 0) continue;
@@ -314,10 +304,20 @@ void user_setup(void) {
     while (user_read(&user)) {
         current_user_id++;
 
-        if (user.flag == DELETED_FLAG || !check_valid_user(&user)) {
+        if (user.flag == USER_DELETED) {
             users_counts--;
             append_empty_user_id(current_user_id);
             log_info("found a empty user slot: %lld", current_user_id);
+            continue;
+        }
+
+        if (!check_valid_user(&user)) {
+            users_counts--;
+            user.flag = USER_DELETED;
+            lseek(udb, -sizeof(User), SEEK_CUR);
+            user_write(&user);
+            append_empty_user_id(current_user_id);
+            log_warn("found an invalid user: %lld", current_user_id);
         }
     }
 }

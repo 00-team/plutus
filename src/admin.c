@@ -15,26 +15,11 @@ int adb = -1;
 void admin_test(void);
 
 bool admin_write(Admin *admin) {
-    if (write(adb, admin, sizeof(Admin)) != sizeof(Admin)) {
-        log_error("admin_write went wrong!");
-        return false;
-    }
-
-    return true;
+    return obj_write(adb, admin, sizeof(Admin), NULL);
 }
 
 bool admin_read(Admin *admin) {
-    ssize_t size = read(adb, admin, sizeof(Admin));
-    if (size != sizeof(Admin)) {
-        if (size == 0)
-            log_info("admin_read end of file!");
-        else
-            log_error("admin_read went wrong!");
-
-        return false;
-    }
-
-    return true;
+    return obj_read(adb, admin, sizeof(Admin), NULL);
 }
 
 

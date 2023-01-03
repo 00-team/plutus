@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <string.h>
 
 #include "plutus.h"
 #include "logger.h"
@@ -71,9 +73,45 @@ off_t seek_append(int fd, size_t size) {
     off_t offset = pos % size;
 
     if (offset != 0) {
-        log_error("seek_append: offset is wrong: %ld", offset);
+        log_warn("seek_append: offset is wrong: %ld", offset);
         return lseek(fd, size - offset, SEEK_CUR);
     }
 
     return pos;
+}
+
+bool obj_write(int db, void *obj, ssize_t size, ssize_t *write_size) {
+    ssize_t ws = write(db, obj, size);
+
+    if (write_size != NULL)
+        *write_size = ws;
+
+    if (ws != size) {
+        log_error("[obj_write]: %u/%u %d. %s", ws, size, errno, strerror(errno));
+        return false;
+    }
+
+    return true;
+}
+
+bool obj_read(int db, void *obj, ssize_t size, ssize_t *read_size) {
+    ssize_t rs = read(db, obj, size);
+
+    if (read_size != NULL)
+        *read_size = rs;
+    
+    if (rs != size) {
+        if (rs == 0)
+            log_info("obj_read end of file!");
+
+        else if (rs < 0)
+            log_error("[obj_read]: %d. %s", errno, strerror(errno));
+
+        else
+            log_warn("[obj_read]: invalid object size: %d/%u", rs, size);
+
+        return false;
+    }
+
+    return true;
 }

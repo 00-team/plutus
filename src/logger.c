@@ -92,6 +92,8 @@ static void update_sectors(DateTime *datetime) {
             fd = fopen(SECTORS[i].path, "a");
         }
 
+        if (SECTORS[i].file != NULL) fclose(SECTORS[i].file);
+
         SECTORS[i].file = fd;
     }
 

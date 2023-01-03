@@ -36,26 +36,11 @@ void print_phone(Phone *phone) {
 
 // node
 bool node_write(Node node) {
-    if (write(phdb, node, sizeof(Node)) != sizeof(Node)) {
-        log_error("node_write went wrong!");
-        return false;
-    }
-
-    return true;
+    return obj_write(phdb, node, sizeof(Node), NULL);
 }
 
 bool node_read(Node node) {
-    ssize_t size = read(phdb, node, sizeof(Node));
-    if (size != sizeof(Node)) {
-        if (size == 0)
-            log_info("node_read end of file!");
-        else
-            log_error("node_read went wrong!");
-
-        return false;
-    }
-
-    return true;
+    return obj_read(phdb, node, sizeof(Node), NULL);
 }
 
 // convert a phone number string

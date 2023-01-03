@@ -16,6 +16,8 @@ void cleanup_files(void);
 void cleanup_handler(int signum);
 off_t fsize(int fd);
 off_t seek_append(int fd, size_t size);
+bool obj_write(int db, void *obj, ssize_t size, ssize_t *write_size);
+bool obj_read(int db, void *obj, ssize_t size, ssize_t *read_size);
 
 // components
 void server_run(void);
