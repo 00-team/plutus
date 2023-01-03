@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <stdbool.h>
 #include <inttypes.h>
+#include <time.h>
 
 #include "user.h"
 #include "types.h"
@@ -36,6 +37,7 @@ typedef struct {
 typedef struct {
     uint32_t status; // html status codes
     uint32_t size;
+    clock_t  time; // time took to return the response
 } ResponseMetaData;
 
 typedef struct {
@@ -54,8 +56,8 @@ typedef struct {
 // static size chekcing
 _Static_assert(offsetof(Request, data) == 2, "offset of Request->Data is invalid");
 _Static_assert(sizeof(Request) == 1026, "Request Size is invalid");
-_Static_assert(sizeof(ResponseMetaData) == 8, "ResponseMetaData Size is invalid");
-_Static_assert(sizeof(Response) == 102408, "Response size is invalid");
+_Static_assert(sizeof(ResponseMetaData) == 16, "ResponseMetaData Size is invalid");
+_Static_assert(sizeof(Response) == 102416, "Response size is invalid");
 _Static_assert(sizeof(bool) == 1, "bool size is invalid");
 
 

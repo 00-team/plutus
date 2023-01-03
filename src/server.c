@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -18,8 +19,8 @@
 #define SOCK_PATH "/tmp/plutus.server.sock"
 #define RMDS sizeof(ResponseMetaData)
 
-const ResponseMetaData INVALID_REQUEST_ARGS = { 400, 0 };
-const ResponseMetaData REQUEST_NOT_FOUND    = { 404, 0 };
+const ResponseMetaData INVALID_REQUEST_ARGS = { 400, 0, 0 };
+const ResponseMetaData REQUEST_NOT_FOUND    = { 404, 0, 0 };
 
 static const API apis[] = {
     /*                                         args size               */
@@ -97,8 +98,13 @@ void server_run(void) {
             continue;
         }
 
+        clock_t action_start = clock();
         route.func(request.data, &response);
+        clock_t action_end = clock();
 
+        response.md.time = action_end - action_start;
+
+        log_info("response time  : %u", response.md.time);
         log_info("response size  : %d", response.md.size);
         log_info("response status: %d", response.md.status);
 
