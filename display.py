@@ -31,6 +31,11 @@ def print_admin():
     with open('./data/admin.bin', 'rb') as f:
         while (a := f.read(ADMIN.size)):
             c += 1
+
+            if len(a) < ADMIN.size:
+                print(f'{R}{c:<2}{S} | invalid admin {R}detected{S}')
+                continue
+
             user_id, b_perms = ADMIN.unpack(a)
             perms = int.from_bytes(b_perms, 'little')
             print(f'{R}{c:<2}{S} | {G}{user_id:<8}{S} | {B}{perms:<8}{S}')
@@ -41,12 +46,17 @@ def print_user():
     with open('./data/user.bin', 'rb') as f:
         while (u := f.read(USER.size)):
             c += 1
+            user_id = f'{R}{c:<3}{S}'
+
+            if len(u) < USER.size:
+                print(f'{user_id} | invalid user {R}detected{S}')
+                continue
+
             cc, b_phone, iflag, iext, pic, token, nick = USER.unpack(u)
 
             picn = sha3_224(c.to_bytes(8, 'little') + pic).hexdigest()
             ext = EXT.get(iext)
 
-            user_id = f'{R}{c:<3}{S}'
             phone = f'{G}+{cc}{S} {b2s(b_phone):<12}'
             flag = f'{R}D{S}' if iflag == 1 else f'{G}N{S}'
             nickname = b2s(nick) or f'{C}NO NIC{S}'
