@@ -11,7 +11,6 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-#include <errno.h>
 
 #include "logger.h"
 
