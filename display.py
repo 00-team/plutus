@@ -10,6 +10,7 @@ USER = Struct('<H12sBB4s64s50s')
 R = '\033[31m'
 G = '\033[32m'
 B = '\033[34m'
+C = '\033[36m'
 S = '\033[0m'
 
 
@@ -46,16 +47,13 @@ def print_user():
             ext = EXT.get(iext)
 
             user_id = f'{R}{c:<3}{S}'
-            phone = f'{G}+{cc:<3}{S} {b2s(b_phone):<12}'
+            phone = f'{G}+{cc}{S} {b2s(b_phone):<12}'
             flag = f'{R}D{S}' if iflag == 1 else f'{G}N{S}'
-            nickname = b2s(nick) or f'{B}NONE{S}'
-            picture = f'{picn}.{G}{ext}{S}' if ext else f'{R}NONE{S}'
+            nickname = b2s(nick) or f'{C}NO NIC{S}'
+            picture = f'{picn}.{G}{ext}{S}' if ext else f'{R}NO PIC{S}'
 
             print(' | '.join((user_id, phone, flag)))
-            print(
-                f'{nickname}\n{picture}\n{token[:20].hex(" ")}\n' + ('=' * 50))
-
-            # picture, nickname,
+            print(f'{nickname}\n{picture}\n{token[:20].hex(" ")}\n' + ('='*50))
 
 
 def main(args):
