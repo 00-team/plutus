@@ -6,6 +6,7 @@
 #include <inttypes.h>
 
 #include "user.h"
+#include "api.h"
 
 typedef uint32_t admin_id_t;
 typedef uint8_t Perms[64]; // uint512_t
@@ -29,8 +30,6 @@ typedef struct {
     // 3 pad
 } AdminUpdateArgs;
 
-
-#include "api.h"
 
 void admin_get(RequestData request, Response *response);
 void admin_add(RequestData request, Response *response);

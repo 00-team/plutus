@@ -6,6 +6,7 @@
 #include "admin.h"
 #include "logger.h"
 #include "plutus.h"
+#include "item.h"
 
 #define LOG_SCTOR SECTOR_ADMIN
 
@@ -15,11 +16,11 @@ int adb = -1;
 void admin_test(void);
 
 bool admin_write(Admin *admin) {
-    return obj_write(adb, admin, sizeof(Admin), NULL);
+    return item_write(adb, admin, sizeof(Admin), NULL);
 }
 
 bool admin_read(Admin *admin) {
-    return obj_read(adb, admin, sizeof(Admin), NULL);
+    return item_read(adb, admin, sizeof(Admin), NULL);
 }
 
 

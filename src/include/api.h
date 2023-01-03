@@ -3,12 +3,10 @@
 #define __PLUTUS_API_H__
 
 #include <stddef.h>
-#include <sys/socket.h>
 #include <stdbool.h>
 #include <inttypes.h>
 #include <time.h>
 
-#include "user.h"
 #include "types.h"
 
 #define MAX_REQUEST_SIZE 1024

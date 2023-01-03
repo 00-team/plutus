@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <inttypes.h>
 
+#include "api.h"
 #include "types.h"
 
 #define USER_PICTURE_SIZE 4
@@ -47,7 +48,6 @@ typedef struct {
 } UserUpdateArgs;
 
 
-#include "api.h"
 
 void user_get(RequestData request, Response *response);
 void user_count(RequestData request, Response *response);

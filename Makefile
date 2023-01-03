@@ -12,7 +12,7 @@ CFLAGS   = -pedantic -Wall -Wno-deprecated-declarations -Wextra -Werror \
 			-Os -DVERSION=\"$(VERSION)\" $(INCS)
 
 
-FILES = plutus utils server admin logger \
+FILES = plutus utils item server admin logger \
 		user/user user/phone
 
 HEADERS = $(wildcard ./src/include/*.h)

@@ -10,6 +10,7 @@
 #include "plutus.h"
 #include "logger.h"
 #include "phone.h"
+#include "item.h"
 
 #define LOG_SCTOR SECTOR_USER
 
@@ -22,11 +23,11 @@ static user_id_t empty_ids_count = 0;
 
 
 bool user_write(User *user) {
-    return obj_write(udb, user, sizeof(User), NULL);
+    return item_write(udb, user, sizeof(User), NULL);
 }
 
 bool user_read(User *user) {
-    return obj_read(udb, user, sizeof(User), NULL);
+    return item_read(udb, user, sizeof(User), NULL);
 }
 
 
@@ -261,7 +262,7 @@ void users_get(RequestData request, Response *response) {
 
     lseek(udb, pos, SEEK_SET);
     read_size = read(udb, response->body, sizeof(User) * USER_PAGE_SIZE);
-    
+
     if (read_size < 0) {
         response->md.size = 0;
         response->md.status = 500;

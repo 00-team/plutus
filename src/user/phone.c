@@ -9,6 +9,7 @@
 #include "plutus.h"
 #include "phone.h"
 #include "logger.h"
+#include "item.h"
 
 #define LOG_SCTOR SECTOR_USER
 
@@ -36,11 +37,11 @@ void print_phone(Phone *phone) {
 
 // node
 bool node_write(Node node) {
-    return obj_write(phdb, node, sizeof(Node), NULL);
+    return item_write(phdb, node, sizeof(Node), NULL);
 }
 
 bool node_read(Node node) {
-    return obj_read(phdb, node, sizeof(Node), NULL);
+    return item_read(phdb, node, sizeof(Node), NULL);
 }
 
 // convert a phone number string
