@@ -21,7 +21,7 @@
 
 int main() {
 
-    signal(SIGINT | SIGABRT | SIGIOT | SIGQUIT | SIGTERM, cleanup_handler);
+    signal(SIGINT | SIGABRT | SIGQUIT | SIGPWR | SIGTERM, cleanup_handler);
 
     logger_setup();
     
