@@ -4,7 +4,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <errno.h>
 
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -19,7 +18,7 @@
 #define SOCK_PATH "/tmp/plutus.server.sock"
 #define RMDS sizeof(ResponseMetaData)
 
-const ResponseMetaData INVALID_REQUEST_ARGS = { 403, 0 };
+const ResponseMetaData INVALID_REQUEST_ARGS = { 400, 0 };
 const ResponseMetaData REQUEST_NOT_FOUND    = { 404, 0 };
 
 static const API apis[] = {
@@ -28,6 +27,8 @@ static const API apis[] = {
     [RQT_USER_COUNT]     = { user_count,    sizeof(bool)                },
     [RQT_USER_LOGIN]     = { user_login,    sizeof(UserLoginArgs)       },
     [RQT_USER_UPDATE]    = { user_update,   sizeof(UserUpdateArgs)      },
+
+    [RQT_USERS_GET]      = { users_get,     sizeof(uint32_t)            },
 
     [RQT_ADMIN_GET]      = { admin_get,     sizeof(user_id_t)           },
     [RQT_ADMIN_ADD]      = { admin_add,     sizeof(Admin)               },
@@ -88,6 +89,10 @@ void server_run(void) {
 
         // invalid request
         if (route.args_size != request_size - sizeof(request.type)) {
+            log_error(
+                "invalid request args: %u / %u", 
+                route.args_size, request_size - sizeof(request.type)
+            );
             sendto(sockfd, &INVALID_REQUEST_ARGS, RMDS, 0, &ca, cal);
             continue;
         }

@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/random.h>
+#include <errno.h>
 
 #include "plutus.h"
 #include "logger.h"
@@ -22,7 +23,7 @@ static user_id_t empty_ids_count = 0;
 
 bool user_write(User *user) {
     if (write(udb, user, sizeof(User)) != sizeof(User)) {
-        log_error("user_write went wrong!");
+        log_error("[user_write]: %d.%s", errno, strerror(errno));
         return false;
     }
 
@@ -35,7 +36,7 @@ bool user_read(User *user) {
         if (size == 0)
             log_info("user_read end of file!");
         else
-            log_error("user_read went wrong!");
+            log_error("[user_read]: %d.%s", errno, strerror(errno));
 
         return false;
     }
@@ -258,6 +259,31 @@ void user_update(RequestData request, Response *response) {
         response->md.status = 500;
         return;
     }
+}
+
+
+void users_get(RequestData request, Response *response) {
+    uint32_t page = *(uint32_t *)request;
+    off_t pos = page * USER_PAGE_SIZE * sizeof(User);
+    off_t max_pos = fsize(udb) - sizeof(User);
+    ssize_t read_size;
+
+    if (pos > max_pos) {
+        response->md.status = 404;
+        response->md.size = 0;
+        return;
+    }
+
+    lseek(udb, pos, SEEK_SET);
+    if ((read_size = read(udb, response->body, sizeof(User) * USER_PAGE_SIZE)) < 0) {
+        response->md.size = 0;
+        response->md.status = 500;
+        log_error("[users_get] read: %d.%s", errno, strerror(errno));
+        return;
+    }
+
+    response->md.status = 200;
+    response->md.size = read_size;
 }
 
 void user_setup(void) {

@@ -14,6 +14,9 @@
 #define USER_DELETED 1
 #define USER_BANNED 2
 
+// 100 user per page
+#define USER_PAGE_SIZE 100
+
 typedef uint64_t user_id_t;
 
 typedef struct {
@@ -50,6 +53,7 @@ void user_get(RequestData request, Response *response);
 void user_count(RequestData request, Response *response);
 void user_login(RequestData request, Response *response);
 void user_update(RequestData request, Response *response);
+void users_get(RequestData request, Response *response);
 
 
 

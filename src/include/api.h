@@ -11,13 +11,15 @@
 #include "types.h"
 
 #define MAX_REQUEST_SIZE 1024
-#define RESPONSE_BODY_SIZE 1024 // 1K
+#define RESPONSE_BODY_SIZE 102400 // 100K
 
 enum {
     RQT_USER_GET,
     RQT_USER_COUNT,
     RQT_USER_LOGIN,
     RQT_USER_UPDATE,
+    
+    RQT_USERS_GET,
 
     RQT_ADMIN_GET,
     RQT_ADMIN_ADD,
@@ -53,7 +55,7 @@ typedef struct {
 _Static_assert(offsetof(Request, data) == 2, "offset of Request->Data is invalid");
 _Static_assert(sizeof(Request) == 1026, "Request Size is invalid");
 _Static_assert(sizeof(ResponseMetaData) == 8, "ResponseMetaData Size is invalid");
-_Static_assert(sizeof(Response) == 1032, "Response size is invalid");
+_Static_assert(sizeof(Response) == 102408, "Response size is invalid");
 _Static_assert(sizeof(bool) == 1, "bool size is invalid");
 
 
