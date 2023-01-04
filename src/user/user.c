@@ -249,29 +249,7 @@ void user_update(RequestData request, Response *response) {
 
 
 void users_get(RequestData request, Response *response) {
-    uint32_t page = *(uint32_t *)request;
-    off_t pos = page * USER_PAGE_SIZE * sizeof(User);
-    off_t max_pos = fsize(udb) - sizeof(User);
-    ssize_t read_size;
-
-    if (pos > max_pos) {
-        response->md.status = 404;
-        response->md.size = 0;
-        return;
-    }
-
-    lseek(udb, pos, SEEK_SET);
-    read_size = read(udb, response->body, sizeof(User) * USER_PAGE_SIZE);
-
-    if (read_size < 0) {
-        response->md.size = 0;
-        response->md.status = 500;
-        log_error("[users_get]: %d. %s", errno, strerror(errno));
-        return;
-    }
-
-    response->md.status = 200;
-    response->md.size = read_size;
+    item_page(udb, *(page_t *)request, sizeof(User), response);
 }
 
 

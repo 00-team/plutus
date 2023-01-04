@@ -3,26 +3,25 @@
 #define __PLUTUS_API_H__
 
 #include <stddef.h>
-#include <stdbool.h>
-#include <inttypes.h>
 #include <time.h>
 
 #include "types.h"
 
 #define MAX_REQUEST_SIZE 1024
 #define RESPONSE_BODY_SIZE 102400 // 100K
+#define PAGE_SIZE 100 // 100 item per page request
 
 enum {
     RQT_USER_GET,
     RQT_USER_COUNT,
     RQT_USER_LOGIN,
     RQT_USER_UPDATE,
-    
     RQT_USERS_GET,
 
     RQT_ADMIN_GET,
     RQT_ADMIN_ADD,
     RQT_ADMIN_UPDATE,
+    RQT_ADMINS_GET,
 
     RQT_LENGTH,
 };

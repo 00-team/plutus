@@ -3,10 +3,9 @@
 #define __PLUTUS_USER_H__
 
 #include <stddef.h>
-#include <inttypes.h>
 
-#include "api.h"
 #include "types.h"
+#include "api.h"
 
 #define USER_PICTURE_SIZE 4
 #define USER_TOKEN_SIZE 64
@@ -14,9 +13,6 @@
 
 #define USER_DELETED 1
 #define USER_BANNED 2
-
-// 100 user per page
-#define USER_PAGE_SIZE 100
 
 typedef uint64_t user_id_t;
 
