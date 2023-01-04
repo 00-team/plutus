@@ -136,8 +136,6 @@ void admin_update(RequestData request, Response *response) {
         return;
     }
 
-    log_debug("admin_id: %"PRIu32" user_id: %"PRIu64, args->admin_id, admin.user_id);
-
     // BYTE_ORDER_DEPENDENT
     // admin.perms[sizeof(admin.perms) - 1] would be the big endian version
     if ((admin.perms[0] & 1) == 1) {
@@ -156,61 +154,10 @@ void admin_update(RequestData request, Response *response) {
     else response->md.status = 200;
 }
 
-/*
-void admin_login(RequestData request, Response *response) {
-    // user_id
-    // token
-    // check if user_id exists
-    // if it exists update the admin token
-    // and send back the admin
-    // res: 
-    // admin perms and admin_id
 
-    /
-
-    each api will return a response size
-    and each recv call will be call twice
-
-    first recv is the metadata
-    how big is the response and the status code of it
-    
-
-    each api also have a fix args size
-    for example this api endpoint have user_id and a token as args
-    which is 8 + 64
-
-    /
-
-    Admin admin;
-    admin_id_t admin_id;
-    AdminLoginArgs *args = (AdminLoginArgs *)request;
-    AdminLoginBody *body = (AdminLoginBody *)response->body;
-
-    admin_id = admin_search(args->user_id, &admin);
-
-    if (admin_id == 0) {
-        response->md.status = 401;
-        response->md.size = 0;
-        return;
-    }
-
-    response->md.status = 200;
-    response->md.size = sizeof(AdminLoginBody);
-
-    body->admin_id = admin_id;
-    memcpy(body->perms, admin.perms, sizeof(admin.perms));
-
-    // write the previous token into response
-    memcpy(body->token, admin.token, sizeof(admin.token));
-
-    // update the token
-    memcpy(admin.token, args->token, sizeof(admin.token));
-    fwrite(&admin, sizeof(Admin), 1, adb);
-
-    // debug
-    fflush(adb);
+void admins_get(RequestData request, Response *response) {
+    item_page(adb, *(page_t *)request, sizeof(Admin), response);
 }
-*/
 
 void admin_test(void) {
     Admin admin;

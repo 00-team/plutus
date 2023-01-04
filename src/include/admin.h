@@ -34,6 +34,7 @@ typedef struct {
 void admin_get(RequestData request, Response *response);
 void admin_add(RequestData request, Response *response);
 void admin_update(RequestData request, Response *response);
+void admins_get(RequestData request, Response *response);
 
 
 

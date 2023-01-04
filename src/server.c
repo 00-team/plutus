@@ -28,12 +28,12 @@ static const API apis[] = {
     [RQT_USER_COUNT]     = { user_count,    sizeof(bool)                },
     [RQT_USER_LOGIN]     = { user_login,    sizeof(UserLoginArgs)       },
     [RQT_USER_UPDATE]    = { user_update,   sizeof(UserUpdateArgs)      },
-
-    [RQT_USERS_GET]      = { users_get,     sizeof(uint32_t)            },
+    [RQT_USERS_GET]      = { users_get,     sizeof(page_t)              },
 
     [RQT_ADMIN_GET]      = { admin_get,     sizeof(user_id_t)           },
     [RQT_ADMIN_ADD]      = { admin_add,     sizeof(Admin)               },
     [RQT_ADMIN_UPDATE]   = { admin_update,  sizeof(AdminUpdateArgs)     },
+    [RQT_ADMINS_GET]     = { admins_get,    sizeof(page_t)              },
 };
 
 
