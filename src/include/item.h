@@ -6,12 +6,13 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <inttypes.h>
-#include <stdbool.h>
 #include <fcntl.h>
+
+#include "api.h"
 
 bool item_write(int db, void *item, ssize_t size, ssize_t *write_size);
 bool item_read(int db, void *item, ssize_t size, ssize_t *read_size);
+void item_page(int db, page_t page, size_t item_size, Response *response);
 
 
 #endif // __PLUTUS_ITEM_H__
