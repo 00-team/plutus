@@ -66,16 +66,34 @@ def print_user():
             print(f'{nickname}\n{picture}\n{token[:20].hex(" ")}\n' + ('='*50))
 
 
-def main(args):
+def add_master(user_id: int):
+    with open('./data/admin.bin', 'r+b') as f:
+        perms = (1).to_bytes(64, 'little')
+        f.seek(0, 2)
+        f.write(user_id.to_bytes(8, 'little') + perms)
 
-    if len(args) < 2 or args[1] not in ['admin', 'user']:
-        return print(f'usage: {args[0]} <admin | user>')
+
+def usage(app):
+    print(f'usage: {app} <admin | user | master [user_id]>')
+
+
+def main(args: list[str]):
+
+    if len(args) < 2 or args[1] not in ['admin', 'user', 'master']:
+        return usage(args[0])
 
     if args[1] == 'admin':
         print_admin()
 
     elif args[1] == 'user':
         print_user()
+
+    elif args[1] == 'master':
+        try:
+            user_id = int(args[2])
+            add_master(user_id)
+        except (ValueError, IndexError):
+            return usage(args[0])
 
 
 if __name__ == '__main__':
