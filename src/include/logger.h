@@ -2,7 +2,7 @@
 #ifndef __PLUTUS_LOGGER_H__
 #define __PLUTUS_LOGGER_H__
 
-#include <stdbool.h>
+#include "common.h"
 
 #define LOG_TRACE_LVL1(LINE) #LINE
 #define LOG_TRACE_LVL2(LINE) LOG_TRACE_LVL1(LINE)

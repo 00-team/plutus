@@ -1,15 +1,5 @@
 
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <time.h>
-
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/types.h>
-
+#include "common.h"
 #include "plutus.h"
 #include "user.h"
 #include "admin.h"

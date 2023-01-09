@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <time.h>
 
+#include "common.h"
 #include "plutus.h"
 #include "phone.h"
 #include "logger.h"

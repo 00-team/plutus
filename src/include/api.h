@@ -2,10 +2,7 @@
 #ifndef __PLUTUS_API_H__
 #define __PLUTUS_API_H__
 
-#include <stddef.h>
-#include <time.h>
-
-#include "types.h"
+#include "common.h"
 
 #define MAX_REQUEST_SIZE 1024
 #define RESPONSE_BODY_SIZE 102400 // 100K

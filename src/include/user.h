@@ -2,7 +2,7 @@
 #ifndef __PLUTUS_USER_H__
 #define __PLUTUS_USER_H__
 
-#include <stddef.h>
+#include "common.h"
 
 #include "types.h"
 #include "api.h"

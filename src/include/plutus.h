@@ -2,8 +2,7 @@
 #ifndef __PLUTUS_H__
 #define __PLUTUS_H__
 
-#include <stdbool.h>
-#include <fcntl.h>
+#include "common.h"
 
 #define USER_DB_FILENAME  "data/user.bin"
 #define PHONE_DB_FILENAME "data/phone.bin"

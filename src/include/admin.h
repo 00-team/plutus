@@ -2,8 +2,7 @@
 #ifndef __PLUTUS_ADMIN_H__
 #define __PLUTUS_ADMIN_H__
 
-#include <stddef.h>
-#include <inttypes.h>
+#include "common.h"
 
 #include "user.h"
 #include "api.h"

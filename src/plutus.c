@@ -1,12 +1,5 @@
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <time.h>
-#include <signal.h>
-#include <unistd.h>
-#include <endian.h>
+#include "common.h"
 
 // BYTE_ORDER_DEPENDENT
 #if __BYTE_ORDER != __LITTLE_ENDIAN

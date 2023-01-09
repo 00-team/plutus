@@ -2,9 +2,7 @@
 #ifndef __PLUTUS_PHONE_H__
 #define __PLUTUS_PHONE_H__
 
-#include <stddef.h>
-#include <stdbool.h>
-#include <inttypes.h>
+#include "common.h"
 
 #include "user.h"
 
