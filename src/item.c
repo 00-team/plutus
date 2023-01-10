@@ -44,7 +44,9 @@ bool item_read(int db, void *item, ssize_t size, ssize_t *read_size) {
 
 void item_page(int db, page_t page, size_t item_size, Response *response) {
     off_t pos = page * PAGE_SIZE * item_size;
-    off_t max_pos = fsize(db) - item_size;
+    off_t db_size = fsize(db);
+    uint64_t count = db_size / item_size;
+    off_t max_pos = db_size - item_size;
     ssize_t read_size;
 
     if (pos > max_pos) {
@@ -53,8 +55,10 @@ void item_page(int db, page_t page, size_t item_size, Response *response) {
         return;
     }
 
+    memcpy(response->body, &count, sizeof(count));
+
     lseek(db, pos, SEEK_SET);
-    read_size = read(db, response->body, PAGE_SIZE * item_size);
+    read_size = read(db, &(response->body[sizeof(count)]), PAGE_SIZE * item_size);
 
     if (read_size < 0) {
         response->md.size = 0;
@@ -64,5 +68,5 @@ void item_page(int db, page_t page, size_t item_size, Response *response) {
     }
 
     response->md.status = 200;
-    response->md.size = read_size;
+    response->md.size = read_size + sizeof(count);
 }
